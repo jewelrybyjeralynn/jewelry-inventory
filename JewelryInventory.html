@@ -394,10 +394,9 @@ function showDetail(r) {
       ${f('Ext Chain Option',r.extChainOption)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
-      ${f('New Etsy SKU',r.newEtsySKU)}${f('Etsy SKU',r.etsySKU)}
-      ${f('Status',r.etsyStatus)}${f('Price',r.etsyPrice)}
-      ${f('Added to Etsy',r.addedToEtsy)}${f('Listing ID',r.etsyListingID)}
-      ${r.etsyTitle?f('Etsy Title',r.etsyTitle,true):''}
+      ${f('New Etsy SKU',r.newEtsySKU)}
+      ${f('Status',r.etsyStatus)}
+      ${f('Added to Etsy',r.addedToEtsy)}
       ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${r.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
     </div></div>
     ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length})</div><div class="sib-list">
@@ -405,7 +404,6 @@ function showDetail(r) {
     </div></div>`:''}
     <div><div class="sec-lbl">Reference</div><div class="fgrid">
       ${f('Old SKU',r.oldSKU)}${f('Characters',r.characters)}
-      ${f('Exact Match',r.exactMatchFound)}${f('Match Best Guess',r.matchBestGuess)}
     </div></div>`;
 }
 
@@ -423,10 +421,10 @@ const FIELDS=[
   {key:'extChainOption',label:'Ext Chain Option'},
   {key:'addedToEtsy',label:'Added to Etsy',type:'sel',options:['','Yes','SOLD','NOT LISTED','REDO']},
   {key:'etsyStatus',label:'Etsy Status',type:'sel',options:['','Active','Inactive','Expired','Sold Out']},
-  {key:'etsyPrice',label:'Etsy Price'},{key:'etsyListingID',label:'Etsy Listing ID'},
-  {key:'etsySKU',label:'Etsy SKU'},
-  {key:'etsyURL',label:'Etsy URL',full:true},{key:'etsyTitle',label:'Etsy Title',full:true},
-  {key:'oldSKU',label:'Old SKU'},{key:'comment',label:'Comment',full:true}
+  {key:'etsyURL',label:'Etsy URL',full:true},
+  {key:'oldSKU',label:'Old SKU'},
+  {key:'characters',label:'Characters'},
+  {key:'giftBox',label:'Gift Box'}
 ];
 
 const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','clearCoat','extChainOption'];
