@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jewelry Inventory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+  :root {
+    --bg:#1a1612;--surface:#231f1a;--surface2:#2e2923;--border:#3d3730;
+    --copper:#b87333;--copper-light:#d4944a;--copper-dim:#7a4d22;
+    --text:#e8ddd0;--text-dim:#9a8a7a;--text-muted:#5a4e44;
+    --active-bg:#1a3d25;--expired:#7a2020;--inactive:#4a4020;--sold:#203a5a;
+    --green:#4caf76;--yellow:#c8a840;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
+
+  /* LOADING */
+  #loadingScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;}
+  .load-logo{font-family:'Libre Baskerville',serif;font-size:26px;color:var(--copper);}
+  .load-msg{color:var(--text-muted);font-size:12px;}
+  .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--copper);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .load-error{color:#e07070;font-size:12px;background:rgba(200,50,50,.1);border:1px solid rgba(200,50,50,.3);padding:12px 18px;max-width:480px;text-align:center;line-height:1.6;display:none;}
+  .retry-btn{background:var(--copper);color:var(--bg);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;margin-top:6px;}
+  .retry-btn:hover{background:var(--copper-light);}
+
+  /* APP */
+  #appScreen{display:none;flex-direction:column;height:100vh;}
+  header{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:14px;background:var(--surface);flex-shrink:0;}
+  .logo{font-family:'Libre Baskerville',serif;font-size:15px;color:var(--copper);white-space:nowrap;}
+  .logo span{color:var(--text-muted);font-size:10px;font-family:'DM Mono',monospace;margin-left:6px;}
+  .search-wrap{flex:1;position:relative;}
+  #search{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px 7px 28px;font-family:'DM Mono',monospace;font-size:12px;outline:none;}
+  #search:focus{border-color:var(--copper);}
+  #search::placeholder{color:var(--text-muted);}
+  .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
+  .filters{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;}
+  select:focus{border-color:var(--copper);}
+  .btn{background:var(--copper);color:var(--bg);border:none;padding:7px 13px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;}
+  .btn:hover{background:var(--copper-light);}
+  .btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn.sec:hover{border-color:var(--copper);color:var(--copper);}
+  .btn.rel{background:transparent;color:var(--text-muted);border:1px solid var(--border);font-size:11px;}
+  .btn.rel:hover{border-color:var(--copper-dim);color:var(--copper);}
+
+  .main{display:flex;flex:1;overflow:hidden;}
+  .list-pane{width:390px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+  .list-hdr{padding:7px 13px;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:11px;background:var(--surface);display:flex;justify-content:space-between;flex-shrink:0;}
+  .list-scroll{flex:1;overflow-y:auto;}
+  .sku-item{padding:8px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:grid;grid-template-columns:1fr auto;gap:3px;}
+  .sku-item:hover{background:var(--surface);}
+  .sku-item.active{background:var(--surface2);border-left:2px solid var(--copper);}
+  .sku-name{color:var(--copper-light);font-size:12px;font-weight:500;word-break:break-all;line-height:1.3;}
+  .sku-desc{color:var(--text-dim);font-size:11px;grid-column:1/-1;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sb{font-size:9px;padding:2px 5px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-weight:500;}
+  .sActive{background:var(--active-bg);color:var(--green);}
+  .sExpired{background:var(--expired);color:#ffaaaa;opacity:.8;}
+  .sInactive{background:var(--inactive);color:var(--yellow);}
+  .sSoldOut{background:var(--sold);color:#88bbdd;}
+  .snone{background:var(--surface2);color:var(--text-muted);}
+  .no-res{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:12px;}
+
+  .detail-pane{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px;}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);gap:8px;text-align:center;}
+  .empty-state .big{font-size:26px;}
+  .det-title{font-family:'Libre Baskerville',serif;font-size:18px;color:var(--copper-light);border-bottom:1px solid var(--border);padding-bottom:13px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .det-actions{display:flex;gap:7px;flex-shrink:0;}
+  .sec-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;}
+  .fld{display:flex;flex-direction:column;gap:3px;}
+  .flbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+  .fval{color:var(--text);font-size:12px;min-height:15px;}
+  .fval.empty{color:var(--text-muted);font-style:italic;}
+  .etsy-link{color:var(--copper);text-decoration:none;font-size:12px;}
+  .etsy-link:hover{color:var(--copper-light);text-decoration:underline;}
+  .sib-list{display:flex;flex-direction:column;gap:2px;}
+  .sib-item{padding:5px 10px;background:var(--surface);border:1px solid var(--border);display:flex;gap:10px;align-items:center;font-size:12px;}
+  .sib-desc{flex:1;color:var(--text-dim);}
+
+  /* MODAL */
+  .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-ov.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .modal-hdr{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:10;}
+  .modal-ttl{font-family:'Libre Baskerville',serif;color:var(--copper);font-size:15px;}
+  .modal-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1;}
+  .modal-x:hover{color:var(--text);}
+  .modal-body{padding:17px;flex:1;}
+  .fform{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .fg{display:flex;flex-direction:column;gap:4px;}
+  .fg.full{grid-column:1/-1;}
+  label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+  input[type=text],textarea,select.fs{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:12px;outline:none;width:100%;}
+  input[type=text]:focus,textarea:focus,select.fs:focus{border-color:var(--copper);}
+  input[type=text]::placeholder,textarea::placeholder{color:var(--text-muted);}
+  textarea{resize:vertical;min-height:52px;}
+  .modal-ftr{padding:11px 17px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:var(--surface);}
+
+  .last-updated{color:var(--text-muted);font-size:10px;white-space:nowrap;}
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);}::-webkit-scrollbar-thumb:hover{background:var(--copper-dim);}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="load-logo">◈ Jewelry Inventory</div>
+  <div class="spinner"></div>
+  <div class="load-msg" id="loadMsg">Loading inventory from Google Sheets...</div>
+  <div class="load-error" id="loadError">
+    <span id="loadErrorMsg"></span><br>
+    <button class="retry-btn" onclick="loadFromSheets()">Retry</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <header>
+    <div class="logo">◈ Jewelry Inventory <span id="totalCount"></span></div>
+    <div class="search-wrap">
+      <span class="si">⌕</span>
+      <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
+    </div>
+    <div class="filters">
+      <select id="fStatus">
+        <option value="">All Statuses</option>
+        <option>Active</option><option>Inactive</option><option>Expired</option>
+        <option value="Sold Out">Sold Out</option>
+        <option value="not listed">No Listing</option>
+      </select>
+      <select id="fAdded">
+        <option value="">All Added</option>
+        <option value="Yes">Added to Etsy</option><option value="SOLD">Sold</option>
+        <option value="NOT LISTED">Not Listed</option><option value="REDO">Redo</option>
+
+      </select>
+      <select id="fColor">
+        <option value="">All Colors</option>
+        <option value="Flame">Flame</option><option value="Patina">Patina</option>
+        <option value="Heat">Heat</option><option value="Alcohol Inks">Alcohol Inks</option>
+        <option value="Solder">Solder</option><option value="Resin">Resin</option>
+      </select>
+      <button class="btn" onclick="openAddModal()">+ Add SKU</button>
+      <button class="btn rel" onclick="loadFromSheets(true)" title="Refresh from Google Sheets">↺ Refresh</button>
+      <div class="last-updated" id="lastUpdated"></div>
+    </div>
+  </header>
+  <div class="main">
+    <div class="list-pane">
+      <div class="list-hdr"><span id="listCount"></span><span style="color:var(--text-muted);font-size:10px">click to view</span></div>
+      <div class="list-scroll" id="listScroll"></div>
+    </div>
+    <div class="detail-pane" id="detailPane">
+      <div class="empty-state"><div class="big">◈</div><div>Select a SKU to view details</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modalOv">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl" id="modalTitle">Add New SKU</div><button class="modal-x" onclick="closeModal()">×</button></div>
+    <div class="modal-body"><div class="fform" id="formGrid"></div></div>
+    <div class="modal-ftr"><button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveRecord()">Save</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTatAoZAED5x-zHjflzNRNNwZeENy-SlZd2qG88-0Wzn6QSyQWNCIWh9UHdl51HHFOZWp2d9aCCf4So/pub?gid=1428673260&single=true&output=csv';
+
+// Column header → internal key
+const COL_MAP = {
+  'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
+  'Object Description':'objectDescription','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Chain':'chain','Chain Length':'chainLength','Chain\nLength':'chainLength',
+  'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
+  'Jump Rings Qty':'jumpRingsQty','Jump\nRings\nQty':'jumpRingsQty',
+  'Beads/Stones':'beadsStones','Beads Stones':'beadsStones','Beads\nStones':'beadsStones',
+  'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
+  'Clear Coat':'clearCoat','Clear\nCoat':'clearCoat',
+  'Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
+  'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
+  'Gift Box':'giftBox','Gift\nBox':'giftBox',
+  'Color':'color','Comment':'comment','Old SKU':'oldSKU',
+  'ETSY ListingID':'etsyListingID','ETSY\nListingID':'etsyListingID',
+  'ETSY SKU':'etsySKU','ETSY Title':'etsyTitle','ETSY\nTitle':'etsyTitle',
+  'ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
+  'ETSY Price':'etsyPrice','ETSY\nPrice':'etsyPrice',
+  'ETSY URL':'etsyURL','Exact Match Found':'exactMatchFound',
+  'Match Based on Best Guess':'matchBestGuess'
+};
+
+let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null;
+
+function normalizeHeader(h) {
+  return String(h||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function resolveKey(raw) {
+  const n = normalizeHeader(raw);
+  if (COL_MAP[n]) return COL_MAP[n];
+  for (const [k,v] of Object.entries(COL_MAP)) {
+    if (normalizeHeader(k)===n) return v;
+  }
+  return null;
+}
+
+// Minimal CSV parser that handles quoted fields with embedded commas/newlines
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i=0; i<text.length; i++) {
+    const c = text[i];
+    if (inQuote) {
+      if (c==='"') {
+        if (text[i+1]==='"') { field+='"'; i++; }
+        else inQuote = false;
+      } else field += c;
+    } else {
+      if (c==='"') { inQuote=true; }
+      else if (c===',') { row.push(field); field=''; }
+      else if (c==='\n') { row.push(field); rows.push(row); row=[]; field=''; }
+      else if (c==='\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field||row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function buildData(rows) {
+  if (rows.length < 2) throw new Error('No data rows found.');
+  const headers = rows[0];
+  const keys = headers.map(h => resolveKey(h));
+
+  const records = [];
+  for (let i=1; i<rows.length; i++) {
+    const row = rows[i];
+    const rec = {};
+    let hasData = false;
+    keys.forEach((key, ci) => {
+      if (!key) return;
+      const v = (row[ci]||'').trim();
+      rec[key] = v||null;
+      if (v) hasData = true;
+    });
+    if (hasData && rec.packagingSKU) records.push(rec);
+  }
+
+  // Group by packagingSKU
+  const map = new Map();
+  records.forEach((r,i) => {
+    r._id = i;
+    if (!map.has(r.packagingSKU)) map.set(r.packagingSKU,[]);
+    map.get(r.packagingSKU).push(r);
+  });
+  const primaries=[];
+  map.forEach(rows=>{ const p=rows[0]; p._siblings=rows; primaries.push(p); });
+  primaries.sort((a,b)=>(a.packagingSKU||'').localeCompare(b.packagingSKU||''));
+
+  addedRecords = JSON.parse(localStorage.getItem('jewelry_added')||'[]');
+  data = [...primaries, ...addedRecords];
+  return records.length;
+}
+
+async function loadFromSheets(isRefresh) {
+  // Show loading state
+  if (isRefresh) {
+    showToast('Refreshing from Google Sheets...');
+  } else {
+    document.getElementById('appScreen').style.display='none';
+    document.getElementById('loadingScreen').style.display='flex';
+    document.getElementById('loadError').style.display='none';
+    document.getElementById('loadMsg').textContent='Loading inventory from Google Sheets...';
+  }
+
+  try {
+    // Use allorigins proxy to bypass CORS when opening as a local file
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL + '&t=' + Date.now());
+    const resp = await fetch(proxyUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — check the sheet is still published.`);
+    const text = await resp.text();
+    if (!text.trim()) throw new Error('Sheet returned empty data.');
+
+    const rows = parseCSV(text);
+    const count = buildData(rows);
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('totalCount').textContent = `(${data.length} SKUs)`;
+
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('appScreen').style.display='flex';
+    selectedIdx = null;
+    render();
+    if (isRefresh) showToast(`Refreshed — ${count} rows loaded`);
+  } catch(err) {
+    if (isRefresh) {
+      showToast('Refresh failed: ' + err.message);
+    } else {
+      document.getElementById('loadMsg').style.display='none';
+      document.querySelector('.spinner').style.display='none';
+      const errEl = document.getElementById('loadError');
+      document.getElementById('loadErrorMsg').textContent = 'Could not load data: ' + err.message;
+      errEl.style.display='block';
+    }
+  }
+}
+
+// RENDER
+function render() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const sf = document.getElementById('fStatus').value.toLowerCase();
+  const af = document.getElementById('fAdded').value;
+  const cf = document.getElementById('fColor').value.toLowerCase();
+
+  filtered = data.filter(r=>{
+    if (!r.packagingSKU) return false;
+    if (q) {
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.etsyTitle,r.color,r.chain,r.beadsStones,r.comment,r.oldSKU,r.etsySKU].filter(Boolean).join(' ').toLowerCase();
+      if (!s.includes(q)) return false;
+    }
+    if (sf==='not listed') { if (r.etsyStatus) return false; }
+    else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
+    if (af && r.addedToEtsy!==af) return false;
+    if (cf && (!r.color||!r.color.toLowerCase().includes(cf))) return false;
+    return true;
+  });
+
+  document.getElementById('listCount').textContent = `${filtered.length} of ${data.length}`;
+
+  const list = document.getElementById('listScroll');
+  if (!filtered.length) { list.innerHTML='<div class="no-res">No matching SKUs</div>'; return; }
+
+  list.innerHTML = filtered.map((r,i)=>{
+    const st=r.etsyStatus||'';
+    const sc=st.replace(/\s+/g,'');
+    const active = selectedIdx!==null && filtered[selectedIdx]===r;
+    return `<div class="sku-item ${active?'active':''}" onclick="selectItem(${i})">
+      <div class="sku-name">${r.packagingSKU}</div>
+      <div class="sb s${sc||'none'}">${st||r.addedToEtsy||'—'}</div>
+      <div class="sku-desc">${r.objectDescription||r.newEtsySKU||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectItem(i) { selectedIdx=i; render(); showDetail(filtered[i]); }
+
+function f(label,v,full) {
+  return `<div class="fld"${full?' style="grid-column:1/-1"':''}>
+    <div class="flbl">${label}</div>
+    <div class="fval ${v?'':'empty'}">${v||'—'}</div>
+  </div>`;
+}
+
+function showDetail(r) {
+  const sibs=r._siblings||[r];
+  const hasEtsy=r.etsyURL;
+  document.getElementById('detailPane').innerHTML=`
+    <div class="det-title">
+      <div>${r.packagingSKU}</div>
+      <div class="det-actions">
+        ${hasEtsy?`<a href="${r.etsyURL}" target="_blank" class="btn sec" style="text-decoration:none;font-size:11px">Open in Etsy ↗</a>`:''}
+        <button class="btn sec" onclick="openEditModal(${r._id})">Edit</button>
+      </div>
+    </div>
+    <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
+      ${f('Description',r.objectDescription)}${f('Size (W×H)',r.wideHeight)}
+      ${f('Color / Finish',r.color)}${f('Clear Coat',r.clearCoat)}
+      ${f('Double Sided',r.doubleSided)}${f('Charm',r.charm)}
+      ${f('Beads / Stones',r.beadsStones)}${f('Comment',r.comment)}
+    </div></div>
+    <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
+      ${f('Chain',r.chain)}${f('Chain Length',r.chainLength)}
+      ${f('Jump Rings',r.jumpRings)}${f('Jump Ring Qty',r.jumpRingsQty)}
+      ${f('Ext Chain Option',r.extChainOption)}
+    </div></div>
+    <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
+      ${f('New Etsy SKU',r.newEtsySKU)}${f('Etsy SKU',r.etsySKU)}
+      ${f('Status',r.etsyStatus)}${f('Price',r.etsyPrice)}
+      ${f('Added to Etsy',r.addedToEtsy)}${f('Listing ID',r.etsyListingID)}
+      ${r.etsyTitle?f('Etsy Title',r.etsyTitle,true):''}
+      ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${r.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
+    </div></div>
+    ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length})</div><div class="sib-list">
+      ${sibs.map(s=>`<div class="sib-item"><span class="sib-desc">${s.objectDescription||'—'}</span><span style="color:var(--text-muted);font-size:11px">${s.chain||''}${s.wideHeight?' · '+s.wideHeight:''}</span></div>`).join('')}
+    </div></div>`:''}
+    <div><div class="sec-lbl">Reference</div><div class="fgrid">
+      ${f('Old SKU',r.oldSKU)}${f('Characters',r.characters)}
+      ${f('Exact Match',r.exactMatchFound)}${f('Match Best Guess',r.matchBestGuess)}
+    </div></div>`;
+}
+
+// FORM
+const FIELDS=[
+  {key:'packagingSKU',label:'Packaging SKU',required:true},
+  {key:'newEtsySKU',label:'New Etsy SKU'},
+  {key:'objectDescription',label:'Object Description',full:true},
+  {key:'wideHeight',label:'Size (W x H)'},{key:'color',label:'Color / Finish'},
+  {key:'clearCoat',label:'Clear Coat',type:'sel',options:['','Matte','Resin','Resin/Matte','Gloss','Clear','Matte Front/Resin Back']},
+  {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
+  {key:'charm',label:'Charm'},{key:'beadsStones',label:'Beads / Stones'},
+  {key:'chain',label:'Chain'},{key:'chainLength',label:'Chain Length'},
+  {key:'jumpRings',label:'Jump Rings'},{key:'jumpRingsQty',label:'Jump Ring Qty'},
+  {key:'extChainOption',label:'Ext Chain Option'},
+  {key:'addedToEtsy',label:'Added to Etsy',type:'sel',options:['','Yes','SOLD','NOT LISTED','REDO','FREEBIE-SOLD','GIFT-SOLD','MINE']},
+  {key:'etsyStatus',label:'Etsy Status',type:'sel',options:['','Active','Inactive','Expired','Sold Out']},
+  {key:'etsyPrice',label:'Etsy Price'},{key:'etsyListingID',label:'Etsy Listing ID'},
+  {key:'etsySKU',label:'Etsy SKU'},
+  {key:'etsyURL',label:'Etsy URL',full:true},{key:'etsyTitle',label:'Etsy Title',full:true},
+  {key:'oldSKU',label:'Old SKU'},{key:'comment',label:'Comment',full:true}
+];
+
+function buildForm(rec) {
+  document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
+    const v=rec?(rec[f.key]||''):'';
+    if (f.type==='sel') return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}">${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    return `<div class="fg ${f.full?'full':''}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}"></div>`;
+  }).join('');
+}
+
+function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null); document.getElementById('modalOv').classList.add('open'); }
+function openEditModal(id) { editingId=id; const rec=data.find(r=>r._id===id); document.getElementById('modalTitle').textContent='Edit SKU'; buildForm(rec); document.getElementById('modalOv').classList.add('open'); }
+function closeModal() { document.getElementById('modalOv').classList.remove('open'); }
+
+function saveRecord() {
+  const rec={};
+  FIELDS.forEach(f=>{ const el=document.getElementById('f_'+f.key); rec[f.key]=el?el.value.trim():''; });
+  if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
+  if (editingId!==null) {
+    const idx=data.findIndex(r=>r._id===editingId);
+    if (idx!==-1) Object.assign(data[idx],rec);
+  } else {
+    rec._id=Date.now(); rec._siblings=[rec];
+    data.push(rec); addedRecords.push(rec);
+    try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
+  }
+  closeModal(); render();
+  showToast(editingId!==null?'SKU updated':'SKU added');
+}
+
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+['search','fStatus','fAdded','fColor'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener(id==='search'?'input':'change',()=>{selectedIdx=null;render();});
+});
+document.getElementById('modalOv').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// Kick off load
+loadFromSheets();
+</script>
+</body>
+</html>
