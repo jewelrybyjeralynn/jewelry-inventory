@@ -306,12 +306,14 @@ async function loadFromSheets(isRefresh) {
         const headers = findingsRows[0].map(h => (h||'').trim().toLowerCase());
         const skuIdx = headers.indexOf('sku');
         const styleIdx = headers.indexOf('style');
+        const colorIdx = headers.indexOf('color');
         if (skuIdx !== -1) {
           chainOptions = findingsRows.slice(1)
             .filter(r => r[skuIdx] && r[skuIdx].trim())
             .map(r => ({
               sku: r[skuIdx].trim(),
-              style: styleIdx !== -1 && r[styleIdx] ? r[styleIdx].trim() : ''
+              style: styleIdx !== -1 && r[styleIdx] ? r[styleIdx].trim() : '',
+              color: colorIdx !== -1 && r[colorIdx] ? r[colorIdx].trim() : ''
             }))
             .sort((a,b) => a.sku.localeCompare(b.sku));
         }
@@ -476,7 +478,8 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='chain') {
       const opts = ['<option value=""></option>', ...chainOptions.map(o => {
-        const label = o.style ? `${o.sku} — ${o.style}` : o.sku;
+        const parts = [o.sku, o.style, o.color].filter(Boolean);
+        const label = parts.join(' — ');
         const selected = o.sku===v ? 'selected' : '';
         return `<option value="${o.sku}" ${selected}>${label}</option>`;
       })].join('');
