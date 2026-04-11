@@ -182,6 +182,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsE
 
 let chainOptions = [];
 let pieceColorOptions = [];
+let finishOptions = [];
 
 // Column header → internal key
 const COL_MAP = {
@@ -199,7 +200,7 @@ const COL_MAP = {
   'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
   'Gift Box':'giftBox','Gift\nBox':'giftBox',
   'Color Method':'colorMethod','Color':'colorMethod',
-  'Piece Colors':'pieceColors',
+  'Colors':'pieceColors','Piece Colors':'pieceColors',
   'Old SKU':'oldSKU',
   'ETSY_Status':'etsyStatus','ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
   'ETSY_URL':'etsyURL','ETSY URL':'etsyURL',
@@ -326,18 +327,24 @@ async function loadFromSheets(isRefresh) {
       }
     }
 
-    // Parse piece color abbreviations
+    // Parse piece color abbreviations and finish values
     if (abbrevResp.ok) {
       const abbrevText = await abbrevResp.text();
       const abbrevRows = parseCSV(abbrevText);
       if (abbrevRows.length > 1) {
         const headers = abbrevRows[0].map(h => (h||'').trim().toLowerCase());
-        const colIdx = headers.indexOf('piece colors');
+        const colIdx = headers.indexOf('colors');
+        const finIdx = headers.findIndex(h => h.includes('finish'));
         if (colIdx !== -1) {
           pieceColorOptions = abbrevRows.slice(1)
             .map(r => (r[colIdx]||'').trim())
             .filter(Boolean)
             .sort();
+        }
+        if (finIdx !== -1) {
+          finishOptions = abbrevRows.slice(1)
+            .map(r => (r[finIdx]||'').trim())
+            .filter(Boolean);
         }
       }
     }
@@ -437,9 +444,9 @@ function showDetail(r) {
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
       ${f('Description',r.objectDescription)}${f('Size / Drop',formatSize(r.wideHeight))}
-      ${f('Color Method',r.colorMethod)}${f('Piece Colors',r.pieceColors)}
-      ${f('Finish',r.finish)}${f('Double Sided',r.doubleSided)}
-      ${f('Charm',r.charm)}${f('Beads / Stones',r.beadsStones)}
+      ${f('Finish',r.finish)}${f('Colors',r.pieceColors)}
+      ${f('Double Sided',r.doubleSided)}${f('Charm',r.charm)}
+      ${f('Beads / Stones',r.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',r.chain)}${f('Chain Length',r.chainLength)}
@@ -466,9 +473,8 @@ const FIELDS=[
   {key:'newEtsySKU',label:'New Etsy SKU'},
   {key:'objectDescription',label:'Object Description',full:true},
   {key:'wideHeight',label:'Wide x Height Drop'},
-  {key:'colorMethod',label:'Color Method'},
-  {key:'pieceColors',label:'Piece Colors',type:'colors'},
-  {key:'finish',label:'Finish',type:'sel',options:['','Matte','Resin','Resin/Matte','Gloss','Clear','Matte Front/Resin Back']},
+  {key:'finish',label:'Finish',type:'finish'},
+  {key:'pieceColors',label:'Colors',type:'colors'},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
   {key:'charm',label:'Charm'},
   {key:'beadsStones',label:'Beads / Stones'},
@@ -480,7 +486,7 @@ const FIELDS=[
   {key:'giftBox',label:'Gift Box'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors','colorMethod'];
+const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -497,6 +503,14 @@ function buildForm(rec, lockedKeys) {
         </label>
         <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
       </div>`;
+    }
+    if (f.type==='finish') {
+      const opts = ['<option value=""></option>', ...finishOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const selected = abbr===v || o===v ? 'selected' : '';
+        return `<option value="${abbr}" ${selected}>${o}</option>`;
+      })].join('');
+      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='colors') {
       const opts = ['<option value=""></option>', ...pieceColorOptions.map(o => {
