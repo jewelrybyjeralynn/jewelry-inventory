@@ -175,29 +175,30 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTatAoZAED5x-zHjflzNRNNwZeENy-SlZd2qG88-0Wzn6QSyQWNCIWh9UHdl51HHFOZWp2d9aCCf4So/pub?gid=1428673260&single=true&output=csv';
-const API_URL = 'https://script.google.com/macros/s/AKfycbzqA0ODi_f-S2TJqm9appCYCC-vBFaVn6F9-xQgtmKuLo1MfzT3zYYJsCgSdcY5t7FPPg/exec';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec';
 
 // Column header → internal key
 const COL_MAP = {
   'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
-  'Object Description':'objectDescription','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
-  'Chain':'chain','Chain Length':'chainLength','Chain\nLength':'chainLength',
+  'Object Description':'objectDescription',
+  'Wide x Height Drop':'wideHeight','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
+  'Chain Length':'chainLength','Chain\nLength':'chainLength',
   'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
   'Jump Rings Qty':'jumpRingsQty','Jump\nRings\nQty':'jumpRingsQty',
   'Beads/Stones':'beadsStones','Beads Stones':'beadsStones','Beads\nStones':'beadsStones',
   'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
-  'Clear Coat':'clearCoat','Clear\nCoat':'clearCoat',
+  'Finish':'finish','Clear Coat':'finish','Clear\nCoat':'finish',
   'Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
   'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
   'Gift Box':'giftBox','Gift\nBox':'giftBox',
-  'Color':'color','Comment':'comment','Old SKU':'oldSKU',
-  'ETSY ListingID':'etsyListingID','ETSY\nListingID':'etsyListingID',
-  'ETSY SKU':'etsySKU','ETSY Title':'etsyTitle','ETSY\nTitle':'etsyTitle',
-  'ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus','ETSY_Status':'etsyStatus',
-  'ETSY Price':'etsyPrice','ETSY\nPrice':'etsyPrice',
-  'ETSY URL':'etsyURL','ETSY_URL':'etsyURL','Exact Match Found':'exactMatchFound',
-  'Match Based on Best Guess':'matchBestGuess'
+  'Color Method':'colorMethod','Color':'colorMethod',
+  'Piece Colors':'pieceColors',
+  'Old SKU':'oldSKU',
+  'ETSY_Status':'etsyStatus','ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
+  'ETSY_URL':'etsyURL','ETSY URL':'etsyURL',
+  'Published_Update_Timestamp':'publishedTimestamp'
 };
 
 let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null;
@@ -327,14 +328,14 @@ function render() {
   filtered = data.filter(r=>{
     if (!r.packagingSKU) return false;
     if (q) {
-      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.etsyTitle,r.color,r.chain,r.beadsStones,r.comment,r.oldSKU,r.etsySKU].filter(Boolean).join(' ').toLowerCase();
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.colorMethod,r.pieceColors,r.chain,r.beadsStones,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
       if (!s.includes(q)) return false;
     }
     if (sf==='not listed') { if (r.etsyStatus) return false; }
     else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
     if (af === 'blank') { if (r.addedToEtsy) return false; }
     else if (af && r.addedToEtsy!==af) return false;
-    if (cf && (!r.color||!r.color.toLowerCase().includes(cf))) return false;
+    if (cf && (!r.colorMethod||!r.colorMethod.toLowerCase().includes(cf))) return false;
     return true;
   });
 
@@ -384,13 +385,13 @@ function showDetail(r) {
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',r.objectDescription)}${f('Size (W×H)',formatSize(r.wideHeight))}
-      ${f('Color / Finish',r.color)}${f('Clear Coat',r.clearCoat)}
-      ${f('Double Sided',r.doubleSided)}${f('Charm',r.charm)}
-      ${f('Beads / Stones',r.beadsStones)}${f('Comment',r.comment)}
+      ${f('Description',r.objectDescription)}${f('Size / Drop',formatSize(r.wideHeight))}
+      ${f('Color Method',r.colorMethod)}${f('Piece Colors',r.pieceColors)}
+      ${f('Finish',r.finish)}${f('Double Sided',r.doubleSided)}
+      ${f('Charm',r.charm)}${f('Beads / Stones',r.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
-      ${f('Chain',r.chain)}${f('Chain Length',r.chainLength)}
+      ${f('Chain Or Hardware',r.chain)}${f('Chain Length',r.chainLength)}
       ${f('Jump Rings',r.jumpRings)}${f('Jump Ring Qty',r.jumpRingsQty)}
       ${f('Ext Chain Option',r.extChainOption)}
     </div></div>
@@ -413,13 +414,14 @@ const FIELDS=[
   {key:'packagingSKU',label:'Packaging SKU',required:true},
   {key:'newEtsySKU',label:'New Etsy SKU'},
   {key:'objectDescription',label:'Object Description',full:true},
-  {key:'wideHeight',label:'Size (W x H)'},
-  {key:'color',label:'Color / Finish'},
-  {key:'clearCoat',label:'Clear Coat',type:'sel',options:['','Matte','Resin','Resin/Matte','Gloss','Clear','Matte Front/Resin Back']},
+  {key:'wideHeight',label:'Wide x Height Drop'},
+  {key:'colorMethod',label:'Color Method'},
+  {key:'pieceColors',label:'Piece Colors'},
+  {key:'finish',label:'Finish',type:'sel',options:['','Matte','Resin','Resin/Matte','Gloss','Clear','Matte Front/Resin Back']},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
   {key:'charm',label:'Charm'},
   {key:'beadsStones',label:'Beads / Stones'},
-  {key:'chain',label:'Chain'},
+  {key:'chain',label:'Chain Or Hardware'},
   {key:'chainLength',label:'Chain Length'},
   {key:'jumpRings',label:'Jump Rings'},
   {key:'jumpRingsQty',label:'Jump Ring Qty'},
@@ -427,7 +429,7 @@ const FIELDS=[
   {key:'giftBox',label:'Gift Box'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','clearCoat','extChainOption'];
+const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
