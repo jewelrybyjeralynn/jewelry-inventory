@@ -300,6 +300,7 @@ async function loadFromSheets(isRefresh) {
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('appScreen').style.display='flex';
     selectedIdx = null;
+    if (!isRefresh) document.getElementById('fStatus').value = 'Active';
     render();
     if (isRefresh) showToast(`Refreshed — ${count} rows loaded`);
   } catch(err) {
@@ -377,6 +378,7 @@ function showDetail(r) {
       <div>${r.packagingSKU}</div>
       <div class="det-actions">
         ${hasEtsy?`<a href="${r.etsyURL}" target="_blank" class="btn sec" style="text-decoration:none;font-size:11px">Open in Etsy ↗</a>`:''}
+        <button class="btn sec" onclick="openAddComponent(${r._id})">+ Component</button>
         <button class="btn sec" onclick="openEditModal(${r._id})">Edit</button>
       </div>
     </div>
@@ -427,32 +429,59 @@ const FIELDS=[
   {key:'oldSKU',label:'Old SKU'},{key:'comment',label:'Comment',full:true}
 ];
 
-function buildForm(rec) {
+const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','clearCoat','extChainOption'];
+const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
+
+function buildForm(rec, lockedKeys) {
   document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
     const v=rec?(rec[f.key]||''):'';
-    if (f.type==='sel') return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}">${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    return `<div class="fg ${f.full?'full':''}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}"></div>`;
+    const isLocked = lockedKeys && lockedKeys.includes(f.key);
+    if (f.type==='sel') return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    return `<div class="fg ${f.full?'full':''}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
   }).join('');
 }
 
-function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null); document.getElementById('modalOv').classList.add('open'); }
-function openEditModal(id) { editingId=id; const rec=data.find(r=>r._id===id); document.getElementById('modalTitle').textContent='Edit SKU'; buildForm(rec); document.getElementById('modalOv').classList.add('open'); }
+function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
+function openEditModal(id) { editingId=id; const rec=data.find(r=>r._id===id); document.getElementById('modalTitle').textContent='Edit SKU'; buildForm(rec, null); document.getElementById('modalOv').classList.add('open'); }
+
+function openAddComponent(parentId) {
+  editingId = null;
+  const parent = data.find(r=>r._id===parentId);
+  // Pre-fill from parent, blank out component-specific fields
+  const prefill = Object.assign({}, parent);
+  COMPONENT_BLANK.forEach(k => prefill[k] = '');
+  document.getElementById('modalTitle').textContent = 'Add Component to ' + parent.packagingSKU;
+  buildForm(prefill, COMPONENT_LOCKED);
+  document.getElementById('modalOv').classList.add('open');
+}
 function closeModal() { document.getElementById('modalOv').classList.remove('open'); }
 
 function saveRecord() {
   const rec={};
-  FIELDS.forEach(f=>{ const el=document.getElementById('f_'+f.key); rec[f.key]=el?el.value.trim():''; });
+  FIELDS.forEach(f=>{
+    const el=document.getElementById('f_'+f.key);
+    rec[f.key]=el?el.value.trim():'';
+  });
   if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
+
   if (editingId!==null) {
     const idx=data.findIndex(r=>r._id===editingId);
     if (idx!==-1) Object.assign(data[idx],rec);
   } else {
     rec._id=Date.now(); rec._siblings=[rec];
-    data.push(rec); addedRecords.push(rec);
+    // If a record with same packagingSKU exists, add to its sibling group
+    const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
+    if (existing) {
+      existing._siblings.push(rec);
+      rec._siblings = existing._siblings;
+    } else {
+      data.push(rec);
+    }
+    addedRecords.push(rec);
     try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
   }
   closeModal(); render();
-  showToast(editingId!==null?'SKU updated':'SKU added');
+  showToast(editingId!==null?'SKU updated':'Component added');
 }
 
 function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
