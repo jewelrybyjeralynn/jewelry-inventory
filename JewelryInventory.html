@@ -136,8 +136,11 @@
       </select>
       <select id="fAdded">
         <option value="">All Added</option>
-        <option value="Yes">Added to Etsy</option><option value="SOLD">Sold</option>
-        <option value="NOT LISTED">Not Listed</option><option value="REDO">Redo</option>
+        <option value="Yes">Yes</option>
+        <option value="SOLD">SOLD</option>
+        <option value="NOT LISTED">NOT LISTED</option>
+        <option value="REDO">REDO</option>
+        <option value="blank">— Blank</option>
 
       </select>
       <select id="fColor">
@@ -281,9 +284,7 @@ async function loadFromSheets(isRefresh) {
   }
 
   try {
-    // Use allorigins proxy to bypass CORS when opening as a local file
-    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL + '&t=' + Date.now());
-    const resp = await fetch(proxyUrl);
+    const resp = await fetch(SHEET_URL + '&t=' + Date.now());
     if (!resp.ok) throw new Error(`HTTP ${resp.status} — check the sheet is still published.`);
     const text = await resp.text();
     if (!text.trim()) throw new Error('Sheet returned empty data.');
@@ -329,7 +330,8 @@ function render() {
     }
     if (sf==='not listed') { if (r.etsyStatus) return false; }
     else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
-    if (af && r.addedToEtsy!==af) return false;
+    if (af === 'blank') { if (r.addedToEtsy) return false; }
+    else if (af && r.addedToEtsy!==af) return false;
     if (cf && (!r.color||!r.color.toLowerCase().includes(cf))) return false;
     return true;
   });
@@ -410,7 +412,7 @@ const FIELDS=[
   {key:'chain',label:'Chain'},{key:'chainLength',label:'Chain Length'},
   {key:'jumpRings',label:'Jump Rings'},{key:'jumpRingsQty',label:'Jump Ring Qty'},
   {key:'extChainOption',label:'Ext Chain Option'},
-  {key:'addedToEtsy',label:'Added to Etsy',type:'sel',options:['','Yes','SOLD','NOT LISTED','REDO','FREEBIE-SOLD','GIFT-SOLD','MINE']},
+  {key:'addedToEtsy',label:'Added to Etsy',type:'sel',options:['','Yes','SOLD','NOT LISTED','REDO']},
   {key:'etsyStatus',label:'Etsy Status',type:'sel',options:['','Active','Inactive','Expired','Sold Out']},
   {key:'etsyPrice',label:'Etsy Price'},{key:'etsyListingID',label:'Etsy Listing ID'},
   {key:'etsySKU',label:'Etsy SKU'},
