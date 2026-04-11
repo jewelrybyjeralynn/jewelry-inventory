@@ -176,6 +176,7 @@
 
 <script>
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTatAoZAED5x-zHjflzNRNNwZeENy-SlZd2qG88-0Wzn6QSyQWNCIWh9UHdl51HHFOZWp2d9aCCf4So/pub?gid=1428673260&single=true&output=csv';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzqA0ODi_f-S2TJqm9appCYCC-vBFaVn6F9-xQgtmKuLo1MfzT3zYYJsCgSdcY5t7FPPg/exec';
 
 // Column header → internal key
 const COL_MAP = {
@@ -422,7 +423,7 @@ const FIELDS=[
   {key:'chainLength',label:'Chain Length'},
   {key:'jumpRings',label:'Jump Rings'},
   {key:'jumpRingsQty',label:'Jump Ring Qty'},
-  {key:'extChainOption',label:'Ext Chain Option'},
+  {key:'extChainOption',label:'Ext Chain Option',type:'sel',options:['','0"','1"','1.5"','2"']},
   {key:'giftBox',label:'Gift Box'}
 ];
 
@@ -475,7 +476,7 @@ function openAddComponent(parentId) {
 }
 function closeModal() { document.getElementById('modalOv').classList.remove('open'); }
 
-function saveRecord() {
+async function saveRecord() {
   const rec={};
   FIELDS.forEach(f=>{
     const el=document.getElementById('f_'+f.key);
@@ -483,24 +484,41 @@ function saveRecord() {
   });
   if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
 
+  // Auto-populate characters from newEtsySKU length
+  rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
+
   if (editingId!==null) {
     const idx=data.findIndex(r=>r._id===editingId);
     if (idx!==-1) Object.assign(data[idx],rec);
+    closeModal(); render();
+    showToast('SKU updated');
   } else {
-    rec._id=Date.now(); rec._siblings=[rec];
-    // If a record with same packagingSKU exists, add to its sibling group
-    const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
-    if (existing) {
-      existing._siblings.push(rec);
-      rec._siblings = existing._siblings;
-    } else {
-      data.push(rec);
+    // Post to Google Sheet
+    showToast('Saving to Google Sheets...');
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(rec)
+      });
+      // no-cors means we can't read the response, but if no exception it went through
+      rec._id=Date.now(); rec._siblings=[rec];
+      const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
+      if (existing) {
+        existing._siblings.push(rec);
+        rec._siblings = existing._siblings;
+      } else {
+        data.push(rec);
+      }
+      addedRecords.push(rec);
+      try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
+      closeModal(); render();
+      showToast('Saved to Google Sheets');
+    } catch(err) {
+      showToast('Save failed: ' + err.message);
     }
-    addedRecords.push(rec);
-    try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
   }
-  closeModal(); render();
-  showToast(editingId!==null?'SKU updated':'Component added');
 }
 
 function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
