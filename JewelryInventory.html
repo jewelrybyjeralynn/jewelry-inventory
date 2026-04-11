@@ -433,9 +433,31 @@ function buildForm(rec, lockedKeys) {
   document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
     const v=rec?(rec[f.key]||''):'';
     const isLocked = lockedKeys && lockedKeys.includes(f.key);
+    if (f.key==='newEtsySKU') {
+      const len = v.length;
+      const color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+      return `<div class="fg" style="grid-column:1/-1">
+        <label style="display:flex;justify-content:space-between">
+          <span>New Etsy SKU</span>
+          <span id="skuCounter" style="color:${color};font-weight:500">${len}/32</span>
+        </label>
+        <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+      </div>`;
+    }
     if (f.type==='sel') return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
     return `<div class="fg ${f.full?'full':''}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
   }).join('');
+
+  // Wire up live counter
+  const skuInput = document.getElementById('f_newEtsySKU');
+  if (skuInput) {
+    skuInput.addEventListener('input', () => {
+      const len = skuInput.value.length;
+      const counter = document.getElementById('skuCounter');
+      counter.textContent = `${len}/32`;
+      counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+    });
+  }
 }
 
 function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
