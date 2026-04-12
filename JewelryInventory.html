@@ -219,12 +219,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsE
 let chainOptions = [];
 let pieceColorOptions = [];
 let finishOptions = [];
+let materialOptions = [];
 
 // Column header → internal key
 const COL_MAP = {
   'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
   'Object Description':'objectDescription',
   'Wide x Height ; Drop':'wideHeight','Wide x Height Drop':'wideHeight','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Material':'material',
   'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
   'Chain Length':'chainLength','Chain\nLength':'chainLength',
   'Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
@@ -385,6 +387,12 @@ async function loadFromSheets(isRefresh) {
         if (finIdx !== -1) {
           finishOptions = abbrevRows.slice(1)
             .map(r => (r[finIdx]||'').trim())
+            .filter(Boolean);
+        }
+        const matIdx = headers.findIndex(h => h.toLowerCase() === 'material');
+        if (matIdx !== -1) {
+          materialOptions = abbrevRows.slice(1)
+            .map(r => (r[matIdx]||'').trim())
             .filter(Boolean);
         }
       }
@@ -573,14 +581,15 @@ function showDetail(r, sibIdx) {
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
       ${f('Description',displayRec.objectDescription)}${f('Wide x Height ; Drop',formatSize(displayRec.wideHeight))}
-      ${f('Finish',displayRec.finish)}${f('Colors',displayRec.pieceColors)}
+      ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
       ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
       ${f('Beads / Stones',displayRec.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Length',displayRec.chainLength)}
-      ${f('Additional Chain Details',displayRec.chainDetail)}${f('Beads or Stone Details',displayRec.beadsStones)}
-      ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}${f('Extension Chain',displayRec.extChainOption)}
+      ${f('Additional Chain Details',displayRec.chainDetail)}${f('Extension Chain',displayRec.extChainOption)}
+      ${f('Finish',displayRec.finish)}${f('Beads or Stone Details',displayRec.beadsStones)}
+      ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',displayRec.newEtsySKU)}
@@ -609,11 +618,12 @@ const FIELDS=[
   {key:'newEtsySKU',label:'New Etsy SKU'},
   {key:'objectDescription',label:'Object Description',full:true},
   {key:'wideHeight',label:'Wide x Height ; Drop'},
-  {key:'finish',label:'Finish',type:'finish'},
+  {key:'material',label:'Material',type:'material'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainLength',label:'Chain Length'},
   {key:'chainDetail',label:'Additional Chain Details (example: beads)'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"']},
+  {key:'finish',label:'Finish',type:'finish'},
   {key:'beadsStones',label:'Beads or Stone Details'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No'},
@@ -621,7 +631,7 @@ const FIELDS=[
   {key:'giftBox',label:'Gift Box'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainDetail','chainLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['objectDescription','wideHeight','material','chain','chainDetail','chainLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -639,6 +649,10 @@ function buildForm(rec, lockedKeys) {
         </label>
         <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
       </div>`;
+    }
+    if (f.type==='material') {
+      const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
+      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='finish') {
       const opts = ['<option value=""></option>', ...finishOptions.map(o => {
