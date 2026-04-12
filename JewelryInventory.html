@@ -644,7 +644,7 @@ function showDetail(r, sibIdx) {
 // FORM
 const FIELDS=[
   {key:'type',label:'Type',type:'type'},
-  {key:'shape',label:'Shape'},
+  {key:'shape',label:'Shape',third:true},
   {key:'objectDescription',label:'Object Description',full:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'material',label:'Material',type:'material'},
@@ -684,7 +684,12 @@ function buildForm(rec, lockedKeys) {
       </div>`;
     }
     if (f.key==='packagingSKU') {
-      return `<div class="fg"><label>Packaging SKU${f.required?' *':''}</label>
+      const len = v.length;
+      const color = len>38?'#e07070':len>34?'#c8a840':'var(--text-muted)';
+      return `<div class="fg"><label style="display:flex;justify-content:space-between">
+          <span>Packaging SKU${f.required?' *':''}</span>
+          <span id="pkgCounter" style="color:${color};font-weight:500">${len}/38</span>
+        </label>
         <input type="text" id="f_packagingSKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Packaging SKU"
           oninput="this.dataset.manualEdit='1'"
           ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
@@ -751,7 +756,7 @@ function buildForm(rec, lockedKeys) {
     return `<div class="fg" style="${colSpan}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
   }).join('');
 
-  // Wire up live counter
+  // Wire up live counter for New Etsy SKU
   const skuInput = document.getElementById('f_newEtsySKU');
   if (skuInput) {
     skuInput.addEventListener('input', () => {
@@ -759,6 +764,18 @@ function buildForm(rec, lockedKeys) {
       const counter = document.getElementById('skuCounter');
       counter.textContent = `${len}/32`;
       counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+    });
+  }
+  // Wire up live counter for Packaging SKU
+  const pkgInput = document.getElementById('f_packagingSKU');
+  if (pkgInput) {
+    pkgInput.addEventListener('input', () => {
+      const len = pkgInput.value.length;
+      const counter = document.getElementById('pkgCounter');
+      if (counter) {
+        counter.textContent = `${len}/38`;
+        counter.style.color = len>38?'#e07070':len>34?'#c8a840':'var(--text-muted)';
+      }
     });
   }
   // Wire up color checkboxes to hidden input
@@ -868,6 +885,14 @@ function autoPopulateSKU() {
   const etsyEl = document.getElementById('f_newEtsySKU');
   if (pkgEl  && !pkgEl.dataset.manualEdit)  pkgEl.value  = pkgSKU;
   if (etsyEl && !etsyEl.dataset.manualEdit) etsyEl.value = etsySKU;
+
+  // Update pkg counter
+  const pkgCounter = document.getElementById('pkgCounter');
+  if (pkgCounter && pkgEl) {
+    const plen = pkgEl.value.length;
+    pkgCounter.textContent = `${plen}/38`;
+    pkgCounter.style.color = plen>38?'#e07070':plen>34?'#c8a840':'var(--text-muted)';
+  }
 
   // Update counter
   const counter = document.getElementById('skuCounter');
