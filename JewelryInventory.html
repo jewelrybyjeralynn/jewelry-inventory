@@ -102,6 +102,20 @@
   .modal-ftr{padding:11px 17px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:var(--surface);}
 
   .last-updated{color:var(--text-muted);font-size:10px;white-space:nowrap;}
+
+  /* Multi-select checkbox filter */
+  .ms-wrap{display:flex;flex-direction:column;gap:3px;position:relative;}
+  .ms-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 24px 6px 8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;text-align:left;position:relative;min-width:110px;}
+  .ms-btn:after{content:'▾';position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:10px;}
+  .ms-btn.active-filter{border-color:var(--copper);color:var(--copper);}
+  .ms-panel{position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);z-index:150;min-width:160px;display:none;flex-direction:column;margin-top:2px;}
+  .ms-panel.open{display:flex;}
+  .ms-option{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;}
+  .ms-option:hover{background:var(--surface2);}
+  .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
+  .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
+  .ms-clear:hover{color:var(--copper);}
+
   .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
   .toast.show{transform:translateY(0);opacity:1;}
   ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}
@@ -130,35 +144,40 @@
       <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
     </div>
     <div class="filters">
-      <div class="filter-wrap">
+      <div class="ms-wrap">
         <div class="filter-lbl">Added To Etsy</div>
-        <select id="fAdded">
-          <option value="">All</option>
-          <option value="Yes">Yes</option>
-          <option value="SOLD">SOLD</option>
-          <option value="NOT LISTED">NOT LISTED</option>
-          <option value="REDO">REDO</option>
-          <option value="blank">— Blank</option>
-        </select>
+        <button class="ms-btn" id="btnAdded" onclick="togglePanel('panelAdded')">All</button>
+        <div class="ms-panel" id="panelAdded">
+          <label class="ms-option"><input type="checkbox" value="Yes" onchange="updateFilter('added')"> Yes</label>
+          <label class="ms-option"><input type="checkbox" value="SOLD" onchange="updateFilter('added')"> SOLD</label>
+          <label class="ms-option"><input type="checkbox" value="NOT LISTED" onchange="updateFilter('added')"> NOT LISTED</label>
+          <label class="ms-option"><input type="checkbox" value="REDO" onchange="updateFilter('added')"> REDO</label>
+          <label class="ms-option"><input type="checkbox" value="blank" onchange="updateFilter('added')"> — Blank</label>
+          <div class="ms-clear" onclick="clearFilter('added')">Clear</div>
+        </div>
       </div>
-      <div class="filter-wrap">
+      <div class="ms-wrap">
         <div class="filter-lbl">Etsy Status</div>
-        <select id="fStatus">
-          <option value="">All</option>
-          <option>Active</option><option>Inactive</option><option>Expired</option>
-          <option value="Sold Out">Sold Out</option>
-          <option value="not listed">No Listing</option>
-        </select>
+        <button class="ms-btn" id="btnStatus" onclick="togglePanel('panelStatus')">All</button>
+        <div class="ms-panel" id="panelStatus">
+          <label class="ms-option"><input type="checkbox" value="Active" onchange="updateFilter('status')"> Active</label>
+          <label class="ms-option"><input type="checkbox" value="Inactive" onchange="updateFilter('status')"> Inactive</label>
+          <label class="ms-option"><input type="checkbox" value="Expired" onchange="updateFilter('status')"> Expired</label>
+          <label class="ms-option"><input type="checkbox" value="Sold Out" onchange="updateFilter('status')"> Sold Out</label>
+          <label class="ms-option"><input type="checkbox" value="not listed" onchange="updateFilter('status')"> No Listing</label>
+          <div class="ms-clear" onclick="clearFilter('status')">Clear</div>
+        </div>
       </div>
-      <div class="filter-wrap">
+      <div class="ms-wrap">
         <div class="filter-lbl">Finish</div>
-        <select id="fColor">
-          <option value="">All</option>
-          <option value="Clear">Clear</option>
-          <option value="Gloss">Gloss</option>
-          <option value="Matte">Matte</option>
-          <option value="Resin">Resin</option>
-        </select>
+        <button class="ms-btn" id="btnFinish" onclick="togglePanel('panelFinish')">All</button>
+        <div class="ms-panel" id="panelFinish">
+          <label class="ms-option"><input type="checkbox" value="Clear" onchange="updateFilter('finish')"> Clear</label>
+          <label class="ms-option"><input type="checkbox" value="Gloss" onchange="updateFilter('finish')"> Gloss</label>
+          <label class="ms-option"><input type="checkbox" value="Matte" onchange="updateFilter('finish')"> Matte</label>
+          <label class="ms-option"><input type="checkbox" value="Resin" onchange="updateFilter('finish')"> Resin</label>
+          <div class="ms-clear" onclick="clearFilter('finish')">Clear selection</div>
+        </div>
       </div>
       <button class="btn" onclick="openAddModal()">+ Add SKU</button>
       <button class="btn rel" onclick="loadFromSheets(true)" title="Refresh from Google Sheets">↺ Refresh</button>
@@ -371,7 +390,14 @@ async function loadFromSheets(isRefresh) {
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('appScreen').style.display='flex';
     selectedIdx = null;
-    if (!isRefresh) document.getElementById('fStatus').value = 'Active';
+    if (!isRefresh) {
+      // Default to Active on first load
+      filterState.status = ['Active'];
+      const cb = document.querySelector('#panelStatus input[value="Active"]');
+      if (cb) cb.checked = true;
+      document.getElementById('btnStatus').textContent = 'Active';
+      document.getElementById('btnStatus').classList.add('active-filter');
+    }
     render();
     if (isRefresh) showToast(`Refreshed — ${count} rows loaded`);
   } catch(err) {
@@ -387,12 +413,56 @@ async function loadFromSheets(isRefresh) {
   }
 }
 
+// MULTI-SELECT FILTER STATE
+const filterState = { added: [], status: [], finish: [] };
+
+function getChecked(panelId) {
+  return [...document.querySelectorAll(`#${panelId} input[type=checkbox]:checked`)].map(c=>c.value);
+}
+
+function updateFilter(type) {
+  const panelMap = {added:'panelAdded', status:'panelStatus', finish:'panelFinish'};
+  const btnMap   = {added:'btnAdded',   status:'btnStatus',   finish:'btnFinish'};
+  filterState[type] = getChecked(panelMap[type]);
+  const btn = document.getElementById(btnMap[type]);
+  if (filterState[type].length === 0) {
+    btn.textContent = 'All';
+    btn.classList.remove('active-filter');
+  } else {
+    btn.textContent = filterState[type].join(', ');
+    btn.classList.add('active-filter');
+  }
+  selectedIdx = null;
+  render();
+}
+
+function clearFilter(type) {
+  const panelMap = {added:'panelAdded', status:'panelStatus', finish:'panelFinish'};
+  document.querySelectorAll(`#${panelMap[type]} input[type=checkbox]`).forEach(c=>c.checked=false);
+  updateFilter(type);
+}
+
+function togglePanel(id) {
+  // Close all other panels first
+  ['panelAdded','panelStatus','panelFinish'].forEach(p=>{
+    if (p!==id) document.getElementById(p).classList.remove('open');
+  });
+  document.getElementById(id).classList.toggle('open');
+}
+
+// Close panels when clicking outside
+document.addEventListener('click', e=>{
+  if (!e.target.closest('.ms-wrap')) {
+    ['panelAdded','panelStatus','panelFinish'].forEach(p=>document.getElementById(p).classList.remove('open'));
+  }
+});
+
 // RENDER
 function render() {
   const q = document.getElementById('search').value.toLowerCase().trim();
-  const sf = document.getElementById('fStatus').value.toLowerCase();
-  const af = document.getElementById('fAdded').value;
-  const cf = document.getElementById('fColor').value.toLowerCase();
+  const sf = filterState.status;
+  const af = filterState.added;
+  const cf = filterState.finish;
 
   filtered = data.filter(r=>{
     if (!r.packagingSKU) return false;
@@ -400,11 +470,27 @@ function render() {
       const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.beadsStones,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
       if (!s.includes(q)) return false;
     }
-    if (sf==='not listed') { if (r.etsyStatus) return false; }
-    else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
-    if (af === 'blank') { if (r.addedToEtsy) return false; }
-    else if (af && r.addedToEtsy!==af) return false;
-    if (cf && (!r.finish||!r.finish.toLowerCase().includes(cf.toLowerCase()))) return false;
+    // Added To Etsy multi-select
+    if (af.length > 0) {
+      const hasBlank = af.includes('blank');
+      const others = af.filter(v=>v!=='blank');
+      const matchBlank = hasBlank && !r.addedToEtsy;
+      const matchOther = others.length > 0 && others.includes(r.addedToEtsy);
+      if (!matchBlank && !matchOther) return false;
+    }
+    // Etsy Status multi-select
+    if (sf.length > 0) {
+      const hasNoListing = sf.includes('not listed');
+      const others = sf.filter(v=>v!=='not listed');
+      const matchNoListing = hasNoListing && !r.etsyStatus;
+      const matchOther = others.length > 0 && r.etsyStatus && others.some(v=>v.toLowerCase()===r.etsyStatus.toLowerCase());
+      if (!matchNoListing && !matchOther) return false;
+    }
+    // Finish multi-select (contains match)
+    if (cf.length > 0) {
+      const finVal = (r.finish||'').toLowerCase();
+      if (!cf.some(v=>finVal.includes(v.toLowerCase()))) return false;
+    }
     return true;
   });
 
@@ -619,10 +705,7 @@ async function saveRecord() {
 
 function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
-['search','fStatus','fAdded','fColor'].forEach(id=>{
-  const el=document.getElementById(id);
-  el.addEventListener(id==='search'?'input':'change',()=>{selectedIdx=null;render();});
-});
+document.getElementById('search').addEventListener('input',()=>{selectedIdx=null;render();});
 document.getElementById('modalOv').addEventListener('click',function(e){if(e.target===this && e.target.id==='modalOv' && false)closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
