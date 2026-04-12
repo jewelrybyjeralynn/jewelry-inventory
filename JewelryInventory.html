@@ -114,7 +114,10 @@
   .ms-option:hover{background:var(--surface2);}
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
-  .ms-clear:hover{color:var(--copper);}
+  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:150px;overflow-y:auto;display:flex;flex-direction:column;}
+  .color-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
+  .color-opt:hover{background:var(--surface2);}
+  .color-opt input{accent-color:var(--copper);cursor:pointer;}
 
   .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
   .toast.show{transform:translateY(0);opacity:1;}
@@ -578,12 +581,12 @@ const FIELDS=[
   {key:'finish',label:'Finish',type:'finish'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainLength',label:'Chain Length'},
-  {key:'chainDetail',label:'Additional Chain Details'},
+  {key:'chainDetail',label:'Additional Chain Details (example: beads)'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"']},
   {key:'beadsStones',label:'Beads or Stone Details'},
-  {key:'pieceColors',label:'Colors',type:'colors'},
-  {key:'charm',label:'Charm',type:'sel',options:['','Yes','No']},
-  {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
+  {key:'pieceColors',label:'Colors',type:'multicolors'},
+  {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No'},
+  {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No'},
   {key:'giftBox',label:'Gift Box'}
 ];
 
@@ -592,7 +595,8 @@ const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
   document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
-    const v=rec?(rec[f.key]||''):'';
+    const defaultVal = f.default || '';
+    const v = rec ? (rec[f.key] || defaultVal) : defaultVal;
     const isLocked = lockedKeys && lockedKeys.includes(f.key);
     if (f.key==='newEtsySKU') {
       const len = v.length;
@@ -612,6 +616,19 @@ function buildForm(rec, lockedKeys) {
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
       return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='multicolors') {
+      const selected = v ? v.split(',').map(s=>s.trim()) : [];
+      const checkboxes = pieceColorOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const checked = selected.includes(abbr) ? 'checked' : '';
+        return `<label class="color-opt"><input type="checkbox" class="color-cb" value="${abbr}" ${checked}> ${o}</label>`;
+      }).join('');
+      return `<div class="fg ${f.full?'full':''}" style="grid-column:1/-1">
+        <label>${f.label}</label>
+        <div class="color-panel" id="f_${f.key}_panel">${checkboxes}</div>
+        <input type="hidden" id="f_${f.key}" value="${v}">
+      </div>`;
     }
     if (f.type==='colors') {
       const opts = ['<option value=""></option>', ...pieceColorOptions.map(o => {
@@ -642,6 +659,14 @@ function buildForm(rec, lockedKeys) {
       const counter = document.getElementById('skuCounter');
       counter.textContent = `${len}/32`;
       counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+    });
+  }
+  // Wire up color checkboxes to hidden input
+  const colorPanel = document.getElementById('f_pieceColors_panel');
+  if (colorPanel) {
+    colorPanel.addEventListener('change', () => {
+      const checked = [...colorPanel.querySelectorAll('.color-cb:checked')].map(c=>c.value);
+      document.getElementById('f_pieceColors').value = checked.join(', ');
     });
   }
 }
