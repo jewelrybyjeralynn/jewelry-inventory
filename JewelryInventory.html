@@ -218,19 +218,19 @@ let finishOptions = [];
 const COL_MAP = {
   'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
   'Object Description':'objectDescription',
-  'Wide x Height Drop':'wideHeight','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Wide x Height ; Drop':'wideHeight','Wide x Height Drop':'wideHeight','Wide x Height':'wideHeight','Wide x\nHeight':'wideHeight',
   'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
   'Chain Length':'chainLength','Chain\nLength':'chainLength',
+  'Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
   'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
   'Jump Rings Qty':'jumpRingsQty','Jump\nRings\nQty':'jumpRingsQty',
-  'Beads/Stones':'beadsStones','Beads Stones':'beadsStones','Beads\nStones':'beadsStones',
+  'Beads or Stone Details':'beadsStones','Beads Stones':'beadsStones','Beads/Stones':'beadsStones','Beads\nStones':'beadsStones',
   'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
   'Finish':'finish','Clear Coat':'finish','Clear\nCoat':'finish',
-  'Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
+  'Extension Chain':'extChainOption','Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
   'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
   'Gift Box':'giftBox','Gift\nBox':'giftBox',
-  'Color Method':'colorMethod','Color':'colorMethod',
-  'Colors':'pieceColors','Piece Colors':'pieceColors',
+  'Colors':'pieceColors','Color Method':'colorMethod','Color':'colorMethod',
   'Old SKU':'oldSKU',
   'ETSY_Status':'etsyStatus','ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
   'ETSY_URL':'etsyURL','ETSY URL':'etsyURL',
@@ -545,15 +545,15 @@ function showDetail(r) {
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',r.objectDescription)}${f('Size / Drop',formatSize(r.wideHeight))}
+      ${f('Description',r.objectDescription)}${f('Wide x Height ; Drop',formatSize(r.wideHeight))}
       ${f('Finish',r.finish)}${f('Colors',r.pieceColors)}
       ${f('Double Sided',r.doubleSided)}${f('Charm',r.charm)}
       ${f('Beads / Stones',r.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
-      ${f('Chain Or Hardware',r.chain)}${f('Chain Detail',r.chainDetail)}
-      ${f('Chain Length',r.chainLength)}${f('Jump Rings',r.jumpRings)}
-      ${f('Jump Ring Qty',r.jumpRingsQty)}${f('Extension Chain',r.extChainOption)}
+      ${f('Chain Or Hardware',r.chain)}${f('Chain Length',r.chainLength)}
+      ${f('Additional Chain Details',r.chainDetail)}${f('Beads or Stone Details',r.beadsStones)}
+      ${f('Jump Rings',r.jumpRings)}${f('Jump Ring Qty',r.jumpRingsQty)}${f('Extension Chain',r.extChainOption)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',r.newEtsySKU)}
@@ -574,14 +574,14 @@ const FIELDS=[
   {key:'packagingSKU',label:'Packaging SKU',required:true},
   {key:'newEtsySKU',label:'New Etsy SKU'},
   {key:'objectDescription',label:'Object Description',full:true},
-  {key:'wideHeight',label:'Wide x Height; Drop'},
+  {key:'wideHeight',label:'Wide x Height ; Drop'},
   {key:'finish',label:'Finish',type:'finish'},
-  {key:'pieceColors',label:'Colors',type:'colors'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
-  {key:'chainDetail',label:'Chain Detail'},
   {key:'chainLength',label:'Chain Length'},
-  {key:'beadsStones',label:'Beads Stones'},
+  {key:'chainDetail',label:'Additional Chain Details'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"']},
+  {key:'beadsStones',label:'Beads or Stone Details'},
+  {key:'pieceColors',label:'Colors',type:'colors'},
   {key:'charm',label:'Charm',type:'sel',options:['','Yes','No']},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
   {key:'giftBox',label:'Gift Box'}
