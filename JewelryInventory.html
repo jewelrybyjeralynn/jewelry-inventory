@@ -131,15 +131,6 @@
     </div>
     <div class="filters">
       <div class="filter-wrap">
-        <div class="filter-lbl">ETSY_Status</div>
-        <select id="fStatus">
-          <option value="">All</option>
-          <option>Active</option><option>Inactive</option><option>Expired</option>
-          <option value="Sold Out">Sold Out</option>
-          <option value="not listed">No Listing</option>
-        </select>
-      </div>
-      <div class="filter-wrap">
         <div class="filter-lbl">Added To Etsy</div>
         <select id="fAdded">
           <option value="">All</option>
@@ -151,6 +142,15 @@
         </select>
       </div>
       <div class="filter-wrap">
+        <div class="filter-lbl">Etsy Status</div>
+        <select id="fStatus">
+          <option value="">All</option>
+          <option>Active</option><option>Inactive</option><option>Expired</option>
+          <option value="Sold Out">Sold Out</option>
+          <option value="not listed">No Listing</option>
+        </select>
+      </div>
+      <div class="filter-wrap">
         <div class="filter-lbl">Finish</div>
         <select id="fColor">
           <option value="">All</option>
@@ -158,7 +158,6 @@
           <option value="Gloss">Gloss</option>
           <option value="Matte">Matte</option>
           <option value="Resin">Resin</option>
-          <option value="Resin/Matte">Resin/Matte</option>
         </select>
       </div>
       <button class="btn" onclick="openAddModal()">+ Add SKU</button>
@@ -405,7 +404,7 @@ function render() {
     else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
     if (af === 'blank') { if (r.addedToEtsy) return false; }
     else if (af && r.addedToEtsy!==af) return false;
-    if (cf && (!r.finish||!r.finish.toLowerCase().includes(cf))) return false;
+    if (cf && (!r.finish||!r.finish.toLowerCase().includes(cf.toLowerCase()))) return false;
     return true;
   });
 
