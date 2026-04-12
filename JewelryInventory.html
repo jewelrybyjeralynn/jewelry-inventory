@@ -777,7 +777,8 @@ function buildForm(rec, lockedKeys) {
       if (f.necklaceOnly) {
         const necklaceTypes = ['NK','SET-PD','SETB-PD','SET2-PD','SET2B-PD'];
         const currentType = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
-        if (!necklaceTypes.includes(currentType)) return '';
+        const disabled = !necklaceTypes.includes(currentType);
+        return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${disabled?'disabled':''} ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
       }
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
