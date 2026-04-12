@@ -80,6 +80,8 @@
   .etsy-link:hover{color:var(--copper-light);text-decoration:underline;}
   .sib-list{display:flex;flex-direction:column;gap:2px;}
   .sib-item{padding:5px 10px;background:var(--surface);border:1px solid var(--border);display:flex;gap:12px;align-items:baseline;font-size:12px;}
+  .sib-item:hover{border-color:var(--copper-dim);}
+  .sib-current{border-left:2px solid var(--copper)!important;background:var(--surface2)!important;}
   .sib-desc{color:var(--text-dim);}
   .sib-chain{color:var(--text-muted);font-size:11px;white-space:nowrap;}
 
@@ -554,6 +556,7 @@ function formatSize(v) {
 
 function showDetail(r) {
   const sibs=r._siblings||[r];
+  window.__sibs = sibs; // make accessible to sibling onclick handlers
   const hasEtsy=r.etsyURL;
   document.getElementById('detailPane').innerHTML=`
     <div class="det-title">
@@ -581,10 +584,11 @@ function showDetail(r) {
       ${f('Added to Etsy',r.addedToEtsy)}
       ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${r.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
     </div></div>
-    ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length})</div><div class="sib-list">
-      ${sibs.map(s=>{
+    ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length}) — click to view/edit</div><div class="sib-list">
+      ${sibs.map((s,si)=>{
         const chainInfo = [s.chain, s.chainLength ? s.chainLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
-        return `<div class="sib-item">
+        const isCurrent = s === r;
+        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[${si}])" style="cursor:pointer">
           <span class="sib-desc">${s.objectDescription||'—'}</span>
           ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
         </div>`;
