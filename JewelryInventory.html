@@ -403,6 +403,7 @@ async function loadFromSheets(isRefresh) {
             }
           });
         }
+        if (typeParentIdx !== -1 && typeIdx !== -1) {
           abbrevRows.slice(1).forEach(r => {
             const parent = (r[typeParentIdx]||'').trim();
             const type   = (r[typeIdx]||'').trim();
