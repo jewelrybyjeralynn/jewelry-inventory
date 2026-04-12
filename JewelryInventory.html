@@ -211,7 +211,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.2';
+const APP_VERSION = 'v1.3';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -235,10 +235,8 @@ const COL_MAP = {
   'Material':'material',
   'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
   'Chain Or Drop Length':'chainOrDropLength','Chain\nLength':'chainOrDropLength',
-  'Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
+  'Chain/Bead/Clasp Details':'chainDetail','Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
   'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
-  'Jump Rings Qty':'jumpRingsQty','Jump\nRings\nQty':'jumpRingsQty',
-  'Beads or Stone Details':'beadsStones','Beads Stones':'beadsStones','Beads/Stones':'beadsStones','Beads\nStones':'beadsStones',
   'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
   'Finish':'finish','Clear Coat':'finish','Clear\nCoat':'finish',
   'Chain Config':'chainConfig',
@@ -549,7 +547,7 @@ function render() {
   filtered = data.filter(r=>{
     if (!r.packagingSKU) return false;
     if (q) {
-      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.beadsStones,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
       if (!s.includes(q)) return false;
     }
     // Added To Etsy multi-select
@@ -633,13 +631,13 @@ function showDetail(r, sibIdx) {
       ${f('Description',displayRec.objectDescription)}${f('Wide x Height',formatSize(displayRec.wideHeight))}
       ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
       ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
-      ${f('Beads / Stones',displayRec.beadsStones)}
+      
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Or Drop Length',displayRec.chainOrDropLength)}
-      ${f('Additional Chain Details',displayRec.chainDetail)}${f('Extension Chain',displayRec.extChainOption)}
+      ${f('Chain/Bead/Clasp Details',displayRec.chainDetail)}${f('Extension Chain',displayRec.extChainOption)}
       ${displayRec.chainConfig?f('Chain Config',displayRec.chainConfig):''}
-      ${f('Finish',displayRec.finish)}${f('Beads or Stone Details',displayRec.beadsStones)}
+      ${f('Finish',displayRec.finish)}
       ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
@@ -673,11 +671,10 @@ const FIELDS=[
   {key:'material',label:'Material',type:'material'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
-  {key:'chainDetail',label:'Additional Chain Details (example: beads)'},
+  {key:'chainDetail',label:'Chain/Bead/Clasp Details'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
   {key:'chainConfig',label:'Chain Config',type:'sel',options:['','Standard Length Options','Standard Length Options with Minor Adjustment','Requires Modifications'],necklaceOnly:true},
   {key:'finish',label:'Finish',type:'finish'},
-  {key:'beadsStones',label:'Beads or Stone Details',third:true},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
@@ -686,7 +683,7 @@ const FIELDS=[
   {key:'newEtsySKU',label:'New Etsy SKU'}
 ];
 
-const COMPONENT_BLANK = ['type','shape','objectDescription','wideHeight','material','chain','chainDetail','chainOrDropLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['type','shape','objectDescription','wideHeight','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
