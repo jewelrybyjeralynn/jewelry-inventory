@@ -697,6 +697,21 @@ async function saveRecord() {
   // Auto-populate characters from newEtsySKU length
   rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
 
+  // Expand finish abbreviation to full name (e.g. FM → Flame & Matte)
+  if (rec.finish) {
+    const match = finishOptions.find(o => o.split('=')[0].trim() === rec.finish);
+    if (match) rec.finish = match.split('=').slice(1).join('=').trim();
+  }
+
+  // Expand color abbreviations to full names, comma separated
+  if (rec.pieceColors) {
+    rec.pieceColors = rec.pieceColors.split(',').map(abbr => {
+      const a = abbr.trim();
+      const match = pieceColorOptions.find(o => o.split('=')[0].trim() === a);
+      return match ? match.split('=').slice(1).join('=').trim() : a;
+    }).join(', ');
+  }
+
   if (editingId!==null) {
     const idx=data.findIndex(r=>r._id===editingId);
     if (idx!==-1) Object.assign(data[idx],rec);
@@ -725,6 +740,8 @@ async function saveRecord() {
       try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
       closeModal(); render();
       showToast('Saved to Google Sheets');
+      // Auto-open + Component form for the SKU just saved
+      setTimeout(() => openAddComponent(rec._id), 300);
     } catch(err) {
       showToast('Save failed: ' + err.message);
     }
