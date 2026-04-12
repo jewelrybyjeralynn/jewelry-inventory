@@ -717,7 +717,19 @@ async function saveRecord() {
 
   if (editingId!==null) {
     const idx=data.findIndex(r=>r._id===editingId);
+    const original = idx !== -1 ? data[idx] : {};
     if (idx!==-1) Object.assign(data[idx],rec);
+    // Post update to Google Sheets
+    rec._action = 'update';
+    rec._originalDescription = original.objectDescription || rec.objectDescription;
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(rec)
+      });
+    } catch(e) {}
     closeModal(); render();
     showToast('SKU updated');
   } else {
