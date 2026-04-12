@@ -94,7 +94,7 @@
   .modal-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1;}
   .modal-x:hover{color:var(--text);}
   .modal-body{padding:17px;flex:1;}
-  .fform{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .fform{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
   .fg{display:flex;flex-direction:column;gap:4px;}
   .fg.full{grid-column:1/-1;}
   label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
@@ -626,9 +626,9 @@ const FIELDS=[
   {key:'finish',label:'Finish',type:'finish'},
   {key:'beadsStones',label:'Beads or Stone Details'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
-  {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No'},
-  {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No'},
-  {key:'giftBox',label:'Gift Box'}
+  {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
+  {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
+  {key:'giftBox',label:'Gift Box',third:true}
 ];
 
 const COMPONENT_BLANK = ['objectDescription','wideHeight','material','chain','chainDetail','chainLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
@@ -652,7 +652,7 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='material') {
       const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
-      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='finish') {
       const opts = ['<option value=""></option>', ...finishOptions.map(o => {
@@ -661,7 +661,7 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || fullName===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='multicolors') {
       const selectedRaw = v ? v.split(',').map(s=>s.trim()) : [];
@@ -684,7 +684,7 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='chain') {
       const opts = ['<option value=""></option>', ...chainOptions.map(o => {
@@ -693,10 +693,14 @@ function buildForm(rec, lockedKeys) {
         const selected = o.sku===v ? 'selected' : '';
         return `<option value="${o.sku}" ${selected}>${label}</option>`;
       })].join('');
-      return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
-    if (f.type==='sel') return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    return `<div class="fg ${f.full?'full':''}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
+    if (f.type==='sel') {
+      const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+      return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    }
+    const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+    return `<div class="fg" style="${colSpan}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
   }).join('');
 
   // Wire up live counter
