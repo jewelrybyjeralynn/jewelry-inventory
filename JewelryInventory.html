@@ -554,48 +554,52 @@ function formatSize(v) {
   return parts[0];
 }
 
-function showDetail(r) {
-  const sibs=r._siblings||[r];
-  window.__sibs = sibs; // make accessible to sibling onclick handlers
-  const hasEtsy=r.etsyURL;
+function showDetail(r, sibIdx) {
+  // Always get the full sibling group from the primary record
+  const primary = data.find(d => d.packagingSKU === r.packagingSKU && d._siblings) || r;
+  const sibs = primary._siblings || [r];
+  window.__sibs = sibs;
+  // The record to display is the requested one (default to first)
+  const displayRec = sibIdx !== undefined ? sibs[sibIdx] : (sibs.includes(r) ? r : sibs[0]);
+  const hasEtsy = displayRec.etsyURL;
   document.getElementById('detailPane').innerHTML=`
     <div class="det-title">
-      <div>${r.packagingSKU}</div>
+      <div>${primary.packagingSKU}</div>
       <div class="det-actions">
-        ${hasEtsy?`<a href="${r.etsyURL}" target="_blank" class="btn sec" style="text-decoration:none;font-size:11px">Open in Etsy ↗</a>`:''}
-        <button class="btn sec" onclick="openAddComponent(${r._id})">+ Component</button>
-        <button class="btn sec" onclick="openEditModal(${r._id})">Edit</button>
+        ${hasEtsy?`<a href="${displayRec.etsyURL}" target="_blank" class="btn sec" style="text-decoration:none;font-size:11px">Open in Etsy ↗</a>`:''}
+        <button class="btn sec" onclick="openAddComponent(${primary._id})">+ Component</button>
+        <button class="btn sec" onclick="openEditModal(${displayRec._id})">Edit</button>
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',r.objectDescription)}${f('Wide x Height ; Drop',formatSize(r.wideHeight))}
-      ${f('Finish',r.finish)}${f('Colors',r.pieceColors)}
-      ${f('Double Sided',r.doubleSided)}${f('Charm',r.charm)}
-      ${f('Beads / Stones',r.beadsStones)}
+      ${f('Description',displayRec.objectDescription)}${f('Wide x Height ; Drop',formatSize(displayRec.wideHeight))}
+      ${f('Finish',displayRec.finish)}${f('Colors',displayRec.pieceColors)}
+      ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
+      ${f('Beads / Stones',displayRec.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
-      ${f('Chain Or Hardware',r.chain)}${f('Chain Length',r.chainLength)}
-      ${f('Additional Chain Details',r.chainDetail)}${f('Beads or Stone Details',r.beadsStones)}
-      ${f('Jump Rings',r.jumpRings)}${f('Jump Ring Qty',r.jumpRingsQty)}${f('Extension Chain',r.extChainOption)}
+      ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Length',displayRec.chainLength)}
+      ${f('Additional Chain Details',displayRec.chainDetail)}${f('Beads or Stone Details',displayRec.beadsStones)}
+      ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}${f('Extension Chain',displayRec.extChainOption)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
-      ${f('New Etsy SKU',r.newEtsySKU)}
-      ${f('Status',r.etsyStatus)}
-      ${f('Added to Etsy',r.addedToEtsy)}
-      ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${r.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
+      ${f('New Etsy SKU',displayRec.newEtsySKU)}
+      ${f('Status',displayRec.etsyStatus)}
+      ${f('Added to Etsy',displayRec.addedToEtsy)}
+      ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${displayRec.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
     </div></div>
     ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length}) — click to view/edit</div><div class="sib-list">
       ${sibs.map((s,si)=>{
         const chainInfo = [s.chain, s.chainLength ? s.chainLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
-        const isCurrent = s === r;
-        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[${si}])" style="cursor:pointer">
+        const isCurrent = s === displayRec;
+        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[0],${si})" style="cursor:pointer">
           <span class="sib-desc">${s.objectDescription||'—'}</span>
           ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
         </div>`;
       }).join('')}
     </div></div>`:''}
     <div><div class="sec-lbl">Reference</div><div class="fgrid">
-      ${f('Old SKU',r.oldSKU)}${f('Characters',r.characters)}
+      ${f('Old SKU',displayRec.oldSKU)}${f('Characters',displayRec.characters)}
     </div></div>`;
 }
 
@@ -699,7 +703,22 @@ function buildForm(rec, lockedKeys) {
 }
 
 function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
-function openEditModal(id) { editingId=id; const rec=data.find(r=>r._id===id); document.getElementById('modalTitle').textContent='Edit SKU'; buildForm(rec, null); document.getElementById('modalOv').classList.add('open'); }
+function openEditModal(id) {
+  editingId = id;
+  // Search data array first, then search inside _siblings
+  let rec = data.find(r => r._id === id);
+  if (!rec) {
+    for (const r of data) {
+      if (r._siblings) {
+        const sib = r._siblings.find(s => s._id === id);
+        if (sib) { rec = sib; break; }
+      }
+    }
+  }
+  document.getElementById('modalTitle').textContent = 'Edit SKU';
+  buildForm(rec, null);
+  document.getElementById('modalOv').classList.add('open');
+}
 
 function openAddComponent(parentId) {
   editingId = null;
@@ -740,9 +759,19 @@ async function saveRecord() {
   }
 
   if (editingId!==null) {
-    const idx=data.findIndex(r=>r._id===editingId);
-    const original = idx !== -1 ? {...data[idx]} : {};
-    if (idx!==-1) Object.assign(data[idx],rec);
+    // Find record - could be in data directly or inside a _siblings array
+    let idx = data.findIndex(r => r._id === editingId);
+    let targetRec = idx !== -1 ? data[idx] : null;
+    if (!targetRec) {
+      for (const r of data) {
+        if (r._siblings) {
+          const sib = r._siblings.find(s => s._id === editingId);
+          if (sib) { targetRec = sib; break; }
+        }
+      }
+    }
+    const original = targetRec ? {...targetRec} : {};
+    if (targetRec) Object.assign(targetRec, rec);
     rec._action = 'update';
     rec._originalDescription = original.objectDescription || rec.objectDescription;
     try {
