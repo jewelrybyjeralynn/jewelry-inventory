@@ -717,29 +717,39 @@ async function saveRecord() {
 
   if (editingId!==null) {
     const idx=data.findIndex(r=>r._id===editingId);
-    const original = idx !== -1 ? data[idx] : {};
+    const original = idx !== -1 ? {...data[idx]} : {};
     if (idx!==-1) Object.assign(data[idx],rec);
-    // Post update to Google Sheets
     rec._action = 'update';
     rec._originalDescription = original.objectDescription || rec.objectDescription;
     try {
-      await fetch(API_URL, {
+      const resp = await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(rec)
       });
-    } catch(e) {}
-    closeModal(); render();
-    showToast('SKU updated');
+      const result = await resp.json();
+      if (result.status === 'error') {
+        showToast('Update failed: ' + result.message);
+      } else {
+        closeModal(); render();
+        // Refresh detail view if this SKU is currently selected
+        if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+        showToast('SKU updated in Google Sheets');
+      }
+    } catch(err) {
+      // If CORS fails fall back to no-cors
+      await fetch(API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(rec)});
+      closeModal(); render();
+      if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+      showToast('SKU updated');
+    }
   } else {
     // Post to Google Sheet
     showToast('Saving to Google Sheets...');
     try {
       await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(rec)
       });
       // no-cors means we can't read the response, but if no exception it went through
