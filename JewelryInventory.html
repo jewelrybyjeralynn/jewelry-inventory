@@ -399,11 +399,14 @@ async function loadFromSheets(isRefresh) {
     document.getElementById('appScreen').style.display='flex';
     selectedIdx = null;
     if (!isRefresh) {
-      // Default to Active on first load
-      filterState.status = ['Active'];
-      const cb = document.querySelector('#panelStatus input[value="Active"]');
-      if (cb) cb.checked = true;
-      document.getElementById('btnStatus').textContent = 'Active';
+      // Default to Active, Inactive, Expired, No Listing on first load
+      const defaultStatuses = ['Active', 'Inactive', 'Expired', 'not listed'];
+      filterState.status = defaultStatuses;
+      defaultStatuses.forEach(v => {
+        const cb = document.querySelector(`#panelStatus input[value="${v}"]`);
+        if (cb) cb.checked = true;
+      });
+      document.getElementById('btnStatus').textContent = 'Active, Inactive, Expired, No Listing';
       document.getElementById('btnStatus').classList.add('active-filter');
     }
     render();
