@@ -341,9 +341,14 @@ async function loadFromSheets(isRefresh) {
         const skuIdx = headers.indexOf('sku');
         const styleIdx = headers.indexOf('style');
         const colorIdx = headers.indexOf('color');
+        const includeIdx = headers.findIndex(h => h.includes('include'));
         if (skuIdx !== -1) {
           chainOptions = findingsRows.slice(1)
-            .filter(r => r[skuIdx] && r[skuIdx].trim())
+            .filter(r => {
+              if (!r[skuIdx] || !r[skuIdx].trim()) return false;
+              if (includeIdx !== -1) return (r[includeIdx]||'').trim().toLowerCase() === 'yes';
+              return true;
+            })
             .map(r => ({
               sku: r[skuIdx].trim(),
               style: styleIdx !== -1 && r[styleIdx] ? r[styleIdx].trim() : '',
@@ -548,7 +553,7 @@ function showDetail(r) {
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',r.chain)}${f('Chain Detail',r.chainDetail)}
       ${f('Chain Length',r.chainLength)}${f('Jump Rings',r.jumpRings)}
-      ${f('Jump Ring Qty',r.jumpRingsQty)}${f('Ext Chain Option',r.extChainOption)}
+      ${f('Jump Ring Qty',r.jumpRingsQty)}${f('Extension Chain',r.extChainOption)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',r.newEtsySKU)}
@@ -569,22 +574,20 @@ const FIELDS=[
   {key:'packagingSKU',label:'Packaging SKU',required:true},
   {key:'newEtsySKU',label:'New Etsy SKU'},
   {key:'objectDescription',label:'Object Description',full:true},
-  {key:'wideHeight',label:'Wide x Height Drop'},
+  {key:'wideHeight',label:'Wide x Height; Drop'},
   {key:'finish',label:'Finish',type:'finish'},
   {key:'pieceColors',label:'Colors',type:'colors'},
-  {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
-  {key:'charm',label:'Charm',type:'sel',options:['','Yes','No']},
-  {key:'beadsStones',label:'Beads / Stones'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainDetail',label:'Chain Detail'},
   {key:'chainLength',label:'Chain Length'},
-  {key:'jumpRings',label:'Jump Rings'},
-  {key:'jumpRingsQty',label:'Jump Ring Qty'},
-  {key:'extChainOption',label:'Ext Chain Option',type:'sel',options:['','0"','1"','1.5"','2"']},
+  {key:'beadsStones',label:'Beads Stones'},
+  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"']},
+  {key:'charm',label:'Charm',type:'sel',options:['','Yes','No']},
+  {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
   {key:'giftBox',label:'Gift Box'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainDetail','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainDetail','chainLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
