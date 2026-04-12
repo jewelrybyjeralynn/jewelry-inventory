@@ -220,9 +220,13 @@ let chainOptions = [];
 let pieceColorOptions = [];
 let finishOptions = [];
 let materialOptions = [];
+let typeOptions = [];
+let chainMetalMap = {}; // color name (lowercase) → chain metal abbreviation
+let typeParentMap = {}; // type abbreviation → typeParent abbreviation
 
 // Column header → internal key
 const COL_MAP = {
+  'Type':'type','Shape':'shape',
   'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
   'Object Description':'objectDescription',
   'Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight',
@@ -377,24 +381,47 @@ async function loadFromSheets(isRefresh) {
       const abbrevRows = parseCSV(abbrevText);
       if (abbrevRows.length > 1) {
         const headers = abbrevRows[0].map(h => (h||'').trim().toLowerCase());
+        const typeParentIdx = headers.findIndex(h => h === 'typeparent');
+        const typeIdx = headers.findIndex(h => h === 'type');
         const colIdx = headers.indexOf('colors');
         const finIdx = headers.findIndex(h => h.includes('finish'));
+        const matIdx = headers.findIndex(h => h === 'material');
+        const chainMetalIdx = headers.findIndex(h => h.includes('chain metal'));
+        if (typeIdx !== -1) {
+          typeOptions = abbrevRows.slice(1).map(r => (r[typeIdx]||'').trim()).filter(Boolean);
+        }
+        if (typeParentIdx !== -1 && typeIdx !== -1) {
+          abbrevRows.slice(1).forEach(r => {
+            const parent = (r[typeParentIdx]||'').trim();
+            const type   = (r[typeIdx]||'').trim();
+            if (parent && type) {
+              const parentAbbr = parent.split('=')[0].trim();
+              const typeAbbr   = type.split('=')[0].trim();
+              typeParentMap[typeAbbr] = parentAbbr;
+            }
+          });
+        }
         if (colIdx !== -1) {
           pieceColorOptions = abbrevRows.slice(1)
-            .map(r => (r[colIdx]||'').trim())
-            .filter(Boolean)
-            .sort();
+            .map(r => (r[colIdx]||'').trim()).filter(Boolean).sort();
         }
         if (finIdx !== -1) {
           finishOptions = abbrevRows.slice(1)
-            .map(r => (r[finIdx]||'').trim())
-            .filter(Boolean);
+            .map(r => (r[finIdx]||'').trim()).filter(Boolean);
         }
-        const matIdx = headers.findIndex(h => h.toLowerCase() === 'material');
         if (matIdx !== -1) {
           materialOptions = abbrevRows.slice(1)
-            .map(r => (r[matIdx]||'').trim())
-            .filter(Boolean);
+            .map(r => (r[matIdx]||'').trim()).filter(Boolean);
+        }
+        if (chainMetalIdx !== -1) {
+          abbrevRows.slice(1).forEach(r => {
+            const val = (r[chainMetalIdx]||'').trim();
+            if (val) {
+              const abbr = val.split('=')[0].trim();
+              const name = val.split('=').slice(1).join('=').trim().toLowerCase();
+              chainMetalMap[name] = abbr;
+            }
+          });
         }
       }
     }
@@ -616,8 +643,8 @@ function showDetail(r, sibIdx) {
 
 // FORM
 const FIELDS=[
-  {key:'packagingSKU',label:'Packaging SKU',required:true},
-  {key:'newEtsySKU',label:'New Etsy SKU'},
+  {key:'type',label:'Type',type:'type'},
+  {key:'shape',label:'Shape'},
   {key:'objectDescription',label:'Object Description',full:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'material',label:'Material',type:'material'},
@@ -630,10 +657,12 @@ const FIELDS=[
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
-  {key:'giftBox',label:'Gift Box',third:true}
+  {key:'giftBox',label:'Gift Box',third:true},
+  {key:'packagingSKU',label:'Packaging SKU',required:true},
+  {key:'newEtsySKU',label:'New Etsy SKU'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','material','chain','chainDetail','chainOrDropLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['type','shape','objectDescription','wideHeight','material','chain','chainDetail','chainOrDropLength','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -649,8 +678,26 @@ function buildForm(rec, lockedKeys) {
           <span>New Etsy SKU</span>
           <span id="skuCounter" style="color:${color};font-weight:500">${len}/32</span>
         </label>
-        <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+        <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40"
+          oninput="this.dataset.manualEdit='1'"
+          ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
       </div>`;
+    }
+    if (f.key==='packagingSKU') {
+      return `<div class="fg"><label>Packaging SKU${f.required?' *':''}</label>
+        <input type="text" id="f_packagingSKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Packaging SKU"
+          oninput="this.dataset.manualEdit='1'"
+          ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+      </div>`;
+    }
+    }
+    if (f.type==='type') {
+      const opts = ['<option value=""></option>', ...typeOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const selected = abbr===v || o===v ? 'selected' : '';
+        return `<option value="${abbr}" ${selected}>${o}</option>`;
+      })].join('');
+      return `<div class="fg" style="grid-column:span 2"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="autoPopulateSKU()" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='material') {
       const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
@@ -695,7 +742,7 @@ function buildForm(rec, lockedKeys) {
         const selected = o.sku===v ? 'selected' : '';
         return `<option value="${o.sku}" ${selected}>${label}</option>`;
       })].join('');
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="autoPopulateSKU()" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='sel') {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
@@ -721,11 +768,117 @@ function buildForm(rec, lockedKeys) {
     colorPanel.addEventListener('change', () => {
       const checked = [...colorPanel.querySelectorAll('.color-cb:checked')].map(c=>c.value);
       document.getElementById('f_pieceColors').value = checked.join(', ');
+      autoPopulateSKU();
     });
   }
+  // Wire up shape input for auto-populate
+  const shapeInput = document.getElementById('f_shape');
+  if (shapeInput) shapeInput.addEventListener('input', autoPopulateSKU);
+  // Wire up finish for auto-populate
+  const finishSel = document.getElementById('f_finish');
+  if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
 }
 
 function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
+
+// SKU auto-population helpers
+function toCamelCase(str) {
+  return (str||'').split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+}
+
+function getChainMetal(chainSku) {
+  if (!chainSku) return '';
+  const found = chainOptions.find(o => o.sku === chainSku);
+  if (!found) return '';
+  const colorLower = (found.color||'').toLowerCase().trim();
+  // Match against chainMetalMap (built from Abbreviations_Published Chain Metal column)
+  for (const [name, abbr] of Object.entries(chainMetalMap)) {
+    if (colorLower.includes(name) || name.includes(colorLower)) return abbr;
+  }
+  return '';
+}
+
+function finishReadable(fullName) {
+  // e.g. "Flame & Matte" → "FlameM", "Solder & Flame & Matte" → "SolderFM"
+  if (!fullName) return '';
+  const wordAbbr = {
+    'flame':'F','matte':'M','clear':'C','gloss':'G','resin':'R',
+    'patina':'Patina','solder':'Solder','alcohol':'Alcohol','ink':'Ink',
+    'uv':'UV','satin':'Satin','copper':'Copper','aluminum':'Aluminum'
+  };
+  const parts = fullName.split(/\s*&\s*/).map(p => p.trim());
+  return parts.map((p, i) => {
+    const lower = p.toLowerCase();
+    if (i === 0) {
+      // First part: use full word but CamelCase-ify multi-word (e.g. "Alcohol Ink")
+      return p.split(/\s+/).map((w,wi) => wi===0 ? w : (wordAbbr[w.toLowerCase()]||w)).join('');
+    }
+    // Subsequent parts: use abbreviation
+    const words = p.split(/\s+/);
+    return words.map(w => wordAbbr[w.toLowerCase()] || w).join('');
+  }).join('');
+}
+
+function finishAbbr(fullName) {
+  // Returns the abbreviation from finishOptions e.g. "Flame & Matte" → "FM"
+  if (!fullName) return '';
+  const match = finishOptions.find(o => {
+    const abbr = o.split('=')[0].trim();
+    const name = o.split('=').slice(1).join('=').trim();
+    return abbr === fullName || name === fullName;
+  });
+  return match ? match.split('=')[0].trim() : fullName;
+}
+
+function getTypeParentAbbr(typeAbbr) {
+  // Look up typeAbbr in typeOptions to find matching TypeParent abbr
+  // typeParentMap is built during abbrev parsing
+  return typeParentMap[typeAbbr] || typeAbbr;
+}
+
+function autoPopulateSKU() {
+  const typeVal   = (document.getElementById('f_type')||{}).value || '';
+  const shapeVal  = (document.getElementById('f_shape')||{}).value || '';
+  const chainVal  = (document.getElementById('f_chain')||{}).value || '';
+  const finishVal = (document.getElementById('f_finish')||{}).value || '';
+  const colorsVal = (document.getElementById('f_pieceColors')||{}).value || '';
+
+  const typeParent = getTypeParentAbbr(typeVal);
+  const shape = toCamelCase(shapeVal);
+  const metal = getChainMetal(chainVal);
+
+  // Finish
+  const finReadable = finishReadable(finishVal);
+  const finShort = finishAbbr(finishVal);
+
+  // Colors — abbreviations joined
+  const colorAbbrs = colorsVal.split(',').map(c => c.trim()).filter(Boolean).join('');
+
+  // Build base (without colors)
+  const pkgBase   = [typeParent, shape, metal, finReadable].filter(Boolean).join('-');
+  const etsyBase  = [typeParent, shape, metal, finShort].filter(Boolean).join('-');
+
+  // Add colors if they fit
+  const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
+  const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
+
+  const pkgSKU  = pkgFull.length  <= 38 ? pkgFull  : pkgBase.slice(0, 38);
+  const etsySKU = etsyFull.length <= 32 ? etsyFull : etsyBase.slice(0, 32);
+
+  const pkgEl  = document.getElementById('f_packagingSKU');
+  const etsyEl = document.getElementById('f_newEtsySKU');
+  if (pkgEl  && !pkgEl.dataset.manualEdit)  pkgEl.value  = pkgSKU;
+  if (etsyEl && !etsyEl.dataset.manualEdit) etsyEl.value = etsySKU;
+
+  // Update counter
+  const counter = document.getElementById('skuCounter');
+  if (counter) {
+    const len = (etsyEl ? etsyEl.value : '').length;
+    counter.textContent = `${len}/32`;
+    counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+  }
+}
+
 function openEditModal(id) {
   editingId = id;
   // Search data array first, then search inside _siblings
