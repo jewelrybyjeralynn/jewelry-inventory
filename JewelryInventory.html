@@ -36,7 +36,9 @@
   #search:focus{border-color:var(--copper);}
   #search::placeholder{color:var(--text-muted);}
   .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
-  .filters{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .filters{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;}
+  .filter-wrap{display:flex;flex-direction:column;gap:3px;}
+  .filter-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
   select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;}
   select:focus{border-color:var(--copper);}
   .btn{background:var(--copper);color:var(--bg);border:none;padding:7px 13px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;}
@@ -128,27 +130,37 @@
       <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
     </div>
     <div class="filters">
-      <select id="fStatus">
-        <option value="">ETSY_Status</option>
-        <option>Active</option><option>Inactive</option><option>Expired</option>
-        <option value="Sold Out">Sold Out</option>
-        <option value="not listed">No Listing</option>
-      </select>
-      <select id="fAdded">
-        <option value="">Added To Etsy</option>
-        <option value="Yes">Yes</option>
-        <option value="SOLD">SOLD</option>
-        <option value="NOT LISTED">NOT LISTED</option>
-        <option value="REDO">REDO</option>
-        <option value="blank">— Blank</option>
-
-      </select>
-      <select id="fColor">
-        <option value="">All Colors</option>
-        <option value="Flame">Flame</option><option value="Patina">Patina</option>
-        <option value="Heat">Heat</option><option value="Alcohol Inks">Alcohol Inks</option>
-        <option value="Solder">Solder</option><option value="Resin">Resin</option>
-      </select>
+      <div class="filter-wrap">
+        <div class="filter-lbl">ETSY_Status</div>
+        <select id="fStatus">
+          <option value="">All</option>
+          <option>Active</option><option>Inactive</option><option>Expired</option>
+          <option value="Sold Out">Sold Out</option>
+          <option value="not listed">No Listing</option>
+        </select>
+      </div>
+      <div class="filter-wrap">
+        <div class="filter-lbl">Added To Etsy</div>
+        <select id="fAdded">
+          <option value="">All</option>
+          <option value="Yes">Yes</option>
+          <option value="SOLD">SOLD</option>
+          <option value="NOT LISTED">NOT LISTED</option>
+          <option value="REDO">REDO</option>
+          <option value="blank">— Blank</option>
+        </select>
+      </div>
+      <div class="filter-wrap">
+        <div class="filter-lbl">Finish</div>
+        <select id="fColor">
+          <option value="">All</option>
+          <option value="Clear">Clear</option>
+          <option value="Gloss">Gloss</option>
+          <option value="Matte">Matte</option>
+          <option value="Resin">Resin</option>
+          <option value="Resin/Matte">Resin/Matte</option>
+        </select>
+      </div>
       <button class="btn" onclick="openAddModal()">+ Add SKU</button>
       <button class="btn rel" onclick="loadFromSheets(true)" title="Refresh from Google Sheets">↺ Refresh</button>
       <div class="last-updated" id="lastUpdated"></div>
@@ -386,14 +398,14 @@ function render() {
   filtered = data.filter(r=>{
     if (!r.packagingSKU) return false;
     if (q) {
-      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.colorMethod,r.pieceColors,r.chain,r.beadsStones,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.beadsStones,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
       if (!s.includes(q)) return false;
     }
     if (sf==='not listed') { if (r.etsyStatus) return false; }
     else if (sf && (!r.etsyStatus||r.etsyStatus.toLowerCase()!==sf)) return false;
     if (af === 'blank') { if (r.addedToEtsy) return false; }
     else if (af && r.addedToEtsy!==af) return false;
-    if (cf && (!r.colorMethod||!r.colorMethod.toLowerCase().includes(cf))) return false;
+    if (cf && (!r.finish||!r.finish.toLowerCase().includes(cf))) return false;
     return true;
   });
 
