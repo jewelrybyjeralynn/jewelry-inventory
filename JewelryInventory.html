@@ -449,9 +449,9 @@ function showDetail(r) {
       ${f('Beads / Stones',r.beadsStones)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
-      ${f('Chain Or Hardware',r.chain)}${f('Chain Length',r.chainLength)}
-      ${f('Jump Rings',r.jumpRings)}${f('Jump Ring Qty',r.jumpRingsQty)}
-      ${f('Ext Chain Option',r.extChainOption)}
+      ${f('Chain Or Hardware',r.chain)}${f('Chain Detail',r.chainDetail)}
+      ${f('Chain Length',r.chainLength)}${f('Jump Rings',r.jumpRings)}
+      ${f('Jump Ring Qty',r.jumpRingsQty)}${f('Ext Chain Option',r.extChainOption)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',r.newEtsySKU)}
@@ -476,9 +476,10 @@ const FIELDS=[
   {key:'finish',label:'Finish',type:'finish'},
   {key:'pieceColors',label:'Colors',type:'colors'},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['','Yes','No']},
-  {key:'charm',label:'Charm'},
+  {key:'charm',label:'Charm',type:'sel',options:['','Yes','No']},
   {key:'beadsStones',label:'Beads / Stones'},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
+  {key:'chainDetail',label:'Chain Detail'},
   {key:'chainLength',label:'Chain Length'},
   {key:'jumpRings',label:'Jump Rings'},
   {key:'jumpRingsQty',label:'Jump Ring Qty'},
@@ -486,7 +487,7 @@ const FIELDS=[
   {key:'giftBox',label:'Gift Box'}
 ];
 
-const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['objectDescription','wideHeight','chain','chainDetail','chainLength','jumpRings','jumpRingsQty','beadsStones','charm','doubleSided','finish','extChainOption','pieceColors'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -611,7 +612,7 @@ function showToast(msg) { const t=document.getElementById('toast'); t.textConten
   const el=document.getElementById(id);
   el.addEventListener(id==='search'?'input':'change',()=>{selectedIdx=null;render();});
 });
-document.getElementById('modalOv').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('modalOv').addEventListener('click',function(e){if(e.target===this && e.target.id==='modalOv' && false)closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 // Kick off load
