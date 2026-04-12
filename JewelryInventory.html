@@ -642,7 +642,7 @@ function buildForm(rec, lockedKeys) {
     if (f.key==='newEtsySKU') {
       const len = v.length;
       const color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
-      return `<div class="fg" style="grid-column:1/-1">
+      return `<div class="fg">
         <label style="display:flex;justify-content:space-between">
           <span>New Etsy SKU</span>
           <span id="skuCounter" style="color:${color};font-weight:500">${len}/32</span>
