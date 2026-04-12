@@ -79,8 +79,9 @@
   .etsy-link{color:var(--copper);text-decoration:none;font-size:12px;}
   .etsy-link:hover{color:var(--copper-light);text-decoration:underline;}
   .sib-list{display:flex;flex-direction:column;gap:2px;}
-  .sib-item{padding:5px 10px;background:var(--surface);border:1px solid var(--border);display:flex;gap:10px;align-items:center;font-size:12px;}
-  .sib-desc{flex:1;color:var(--text-dim);}
+  .sib-item{padding:5px 10px;background:var(--surface);border:1px solid var(--border);display:flex;gap:12px;align-items:baseline;font-size:12px;}
+  .sib-desc{color:var(--text-dim);}
+  .sib-chain{color:var(--text-muted);font-size:11px;white-space:nowrap;}
 
   /* MODAL */
   .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
@@ -514,10 +515,13 @@ function render() {
     const st=r.etsyStatus||'';
     const sc=st.replace(/\s+/g,'');
     const active = selectedIdx!==null && filtered[selectedIdx]===r;
+    const sibs = r._siblings || [r];
+    const descs = sibs.map(s=>s.objectDescription).filter(Boolean);
+    const descHtml = descs.map(d=>`<div class="sku-desc">${d}</div>`).join('');
     return `<div class="sku-item ${active?'active':''}" onclick="selectItem(${i})">
       <div class="sku-name">${r.packagingSKU}</div>
       <div class="sb s${sc||'none'}">${st||r.addedToEtsy||'—'}</div>
-      <div class="sku-desc">${r.objectDescription||r.newEtsySKU||''}</div>
+      ${descHtml}
     </div>`;
   }).join('');
 }
@@ -568,7 +572,13 @@ function showDetail(r) {
       ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${r.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
     </div></div>
     ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length})</div><div class="sib-list">
-      ${sibs.map(s=>`<div class="sib-item"><span class="sib-desc">${s.objectDescription||'—'}</span><span style="color:var(--text-muted);font-size:11px">${s.chain||''}${s.wideHeight?' · '+formatSize(s.wideHeight):''}</span></div>`).join('')}
+      ${sibs.map(s=>{
+        const chainInfo = [s.chain, s.chainLength ? s.chainLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
+        return `<div class="sib-item">
+          <span class="sib-desc">${s.objectDescription||'—'}</span>
+          ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
+        </div>`;
+      }).join('')}
     </div></div>`:''}
     <div><div class="sec-lbl">Reference</div><div class="fgrid">
       ${f('Old SKU',r.oldSKU)}${f('Characters',r.characters)}
