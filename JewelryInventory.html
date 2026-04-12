@@ -223,6 +223,7 @@ let materialOptions = [];
 let typeOptions = [];
 let chainMetalMap = {}; // color name (lowercase) → chain metal abbreviation
 let typeParentMap = {}; // type abbreviation → typeParent abbreviation
+let shapeAbbrevMap = {}; // shape full name (lowercase) → abbreviation
 
 // Column header → internal key
 const COL_MAP = {
@@ -390,7 +391,17 @@ async function loadFromSheets(isRefresh) {
         if (typeIdx !== -1) {
           typeOptions = abbrevRows.slice(1).map(r => (r[typeIdx]||'').trim()).filter(Boolean);
         }
-        if (typeParentIdx !== -1 && typeIdx !== -1) {
+        const shapeIdx = headers.findIndex(h => h === 'shape');
+        if (shapeIdx !== -1) {
+          abbrevRows.slice(1).forEach(r => {
+            const val = (r[shapeIdx]||'').trim();
+            if (val && val.includes('=')) {
+              const abbr = val.split('=')[0].trim();
+              const name = val.split('=').slice(1).join('=').trim().toLowerCase();
+              shapeAbbrevMap[name] = abbr;
+            }
+          });
+        }
           abbrevRows.slice(1).forEach(r => {
             const parent = (r[typeParentIdx]||'').trim();
             const type   = (r[typeIdx]||'').trim();
@@ -860,7 +871,8 @@ function autoPopulateSKU() {
   const colorsVal = (document.getElementById('f_pieceColors')||{}).value || '';
 
   const typeParent = getTypeParentAbbr(typeVal);
-  const shape = toCamelCase(shapeVal);
+  const shapeLower = shapeVal.toLowerCase().trim();
+  const shape = shapeAbbrevMap[shapeLower] || toCamelCase(shapeVal);
   const metal = getChainMetal(chainVal);
 
   // Finish
