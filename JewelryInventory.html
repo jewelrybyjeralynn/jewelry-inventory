@@ -690,7 +690,6 @@ function buildForm(rec, lockedKeys) {
           ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
       </div>`;
     }
-    }
     if (f.type==='type') {
       const opts = ['<option value=""></option>', ...typeOptions.map(o => {
         const abbr = o.split('=')[0].trim();
