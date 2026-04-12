@@ -240,6 +240,7 @@ const COL_MAP = {
   'Beads or Stone Details':'beadsStones','Beads Stones':'beadsStones','Beads/Stones':'beadsStones','Beads\nStones':'beadsStones',
   'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
   'Finish':'finish','Clear Coat':'finish','Clear\nCoat':'finish',
+  'Chain Config':'chainConfig',
   'Extension Chain':'extChainOption','Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
   'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
   'Gift Box':'giftBox','Gift\nBox':'giftBox',
@@ -627,6 +628,7 @@ function showDetail(r, sibIdx) {
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Or Drop Length',displayRec.chainOrDropLength)}
       ${f('Additional Chain Details',displayRec.chainDetail)}${f('Extension Chain',displayRec.extChainOption)}
+      ${displayRec.chainConfig?f('Chain Config',displayRec.chainConfig):''}
       ${f('Finish',displayRec.finish)}${f('Beads or Stone Details',displayRec.beadsStones)}
       ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}
     </div></div>
@@ -663,6 +665,7 @@ const FIELDS=[
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'chainDetail',label:'Additional Chain Details (example: beads)'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
+  {key:'chainConfig',label:'Chain Config',type:'sel',options:['','Standard Length Options','Standard Length Options with Minor Adjustment','Requires Modifications'],necklaceOnly:true},
   {key:'finish',label:'Finish',type:'finish'},
   {key:'beadsStones',label:'Beads or Stone Details',third:true},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
@@ -712,7 +715,7 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg" style="grid-column:span 2"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="autoPopulateSKU()" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="grid-column:span 2"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='material') {
       const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
@@ -761,6 +764,11 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='sel') {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+      if (f.necklaceOnly) {
+        const necklaceTypes = ['NK','SET-PD','SETB-PD','SET2-PD','SET2B-PD'];
+        const currentType = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
+        if (!necklaceTypes.includes(currentType)) return '';
+      }
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
     const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
@@ -861,6 +869,19 @@ function getTypeParentAbbr(typeAbbr) {
   // Look up typeAbbr in typeOptions to find matching TypeParent abbr
   // typeParentMap is built during abbrev parsing
   return typeParentMap[typeAbbr] || typeAbbr;
+}
+
+function onTypeChange() {
+  // Rebuild the form to show/hide necklace-only fields, preserving current values
+  const currentRec = {};
+  FIELDS.forEach(f => {
+    const el = document.getElementById('f_' + f.key);
+    if (el) currentRec[f.key] = el.value;
+  });
+  const lockedKeys = document.getElementById('f_packagingSKU') && 
+    document.getElementById('f_packagingSKU').readOnly ? COMPONENT_LOCKED : null;
+  buildForm(currentRec, lockedKeys);
+  autoPopulateSKU();
 }
 
 function autoPopulateSKU() {
