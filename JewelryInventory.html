@@ -643,16 +643,19 @@ function buildForm(rec, lockedKeys) {
     if (f.type==='finish') {
       const opts = ['<option value=""></option>', ...finishOptions.map(o => {
         const abbr = o.split('=')[0].trim();
-        const selected = abbr===v || o===v ? 'selected' : '';
+        const fullName = o.split('=').slice(1).join('=').trim();
+        const selected = abbr===v || fullName===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
       return `<div class="fg ${f.full?'full':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='multicolors') {
-      const selected = v ? v.split(',').map(s=>s.trim()) : [];
+      const selectedRaw = v ? v.split(',').map(s=>s.trim()) : [];
       const checkboxes = pieceColorOptions.map(o => {
         const abbr = o.split('=')[0].trim();
-        const checked = selected.includes(abbr) ? 'checked' : '';
+        const fullName = o.split('=').slice(1).join('=').trim();
+        // Match on abbreviation OR full name (handles both old and new stored values)
+        const checked = selectedRaw.includes(abbr) || selectedRaw.includes(fullName) ? 'checked' : '';
         return `<label class="color-opt"><input type="checkbox" class="color-cb" value="${abbr}" ${checked}> ${o}</label>`;
       }).join('');
       return `<div class="fg ${f.full?'full':''}" style="grid-column:1/-1">
