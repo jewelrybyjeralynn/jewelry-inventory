@@ -217,7 +217,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.6';
+const APP_VERSION = 'v1.7';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -229,7 +229,6 @@ let finishOptions = [];
 let materialOptions = [];
 let typeOptions = [];
 let chainMetalMap = {}; // color name (lowercase) → chain metal abbreviation
-let typeParentMap = {}; // type abbreviation → typeParent abbreviation
 let shapeAbbrevMap = {}; // shape full name (lowercase) → abbreviation
 
 // Column header → internal key
@@ -395,7 +394,6 @@ async function loadFromSheets(isRefresh) {
       const abbrevRows = parseCSV(abbrevText);
       if (abbrevRows.length > 1) {
         const headers = abbrevRows[0].map(h => (h||'').trim().toLowerCase());
-        const typeParentIdx = headers.findIndex(h => h === 'typeparent');
         const typeIdx = headers.findIndex(h => h === 'type');
         const colIdx = headers.indexOf('colors');
         const finIdx = headers.findIndex(h => h.includes('finish'));
@@ -412,17 +410,6 @@ async function loadFromSheets(isRefresh) {
               const abbr = val.split('=')[0].trim();
               const name = val.split('=').slice(1).join('=').trim().toLowerCase();
               shapeAbbrevMap[name] = abbr;
-            }
-          });
-        }
-        if (typeParentIdx !== -1 && typeIdx !== -1) {
-          abbrevRows.slice(1).forEach(r => {
-            const parent = (r[typeParentIdx]||'').trim();
-            const type   = (r[typeIdx]||'').trim();
-            if (parent && type) {
-              const parentAbbr = parent.split('=')[0].trim();
-              const typeAbbr   = type.split('=')[0].trim();
-              typeParentMap[typeAbbr] = parentAbbr;
             }
           });
         }
@@ -788,7 +775,7 @@ function buildForm(rec, lockedKeys) {
     if (f.type==='sel') {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
       if (f.necklaceOnly) {
-        const necklaceTypes = ['NK','SET-PD','SETB-PD','SET2-PD','SET2B-PD'];
+        const necklaceTypes = ['NK','SET-PD'];
         const currentType = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
         const disabled = !necklaceTypes.includes(currentType);
         return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${disabled?'disabled':''} ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
@@ -934,36 +921,38 @@ function finishAbbr(fullName) {
   return match ? match.split('=')[0].trim() : fullName;
 }
 
-function getTypeParentAbbr(typeAbbr) {
-  // Look up typeAbbr in typeOptions to find matching TypeParent abbr
-  // typeParentMap is built during abbrev parsing
-  return typeParentMap[typeAbbr] || typeAbbr;
+function isSetType(typeVal) {
+  return (typeVal||'').startsWith('SET-');
+}
+
+function deriveTypeParent(typeVal) {
+  // All set types use 'SET' as TypeParent prefix in SKU
+  // Non-set types use their own abbreviation
+  if (isSetType(typeVal)) return 'SET';
+  return (typeVal||'').split('=')[0].trim() || typeVal;
 }
 
 function onTypeChange() {
-  // Rebuild the form to show/hide necklace-only fields, preserving current values
   const currentRec = {};
   FIELDS.forEach(f => {
     const el = document.getElementById('f_' + f.key);
     if (el) currentRec[f.key] = el.value;
   });
-  const lockedKeys = document.getElementById('f_packagingSKU') && 
+  const lockedKeys = document.getElementById('f_packagingSKU') &&
     document.getElementById('f_packagingSKU').readOnly ? COMPONENT_LOCKED : null;
   buildForm(currentRec, lockedKeys);
   autoPopulateSKU();
 }
 
-const SET_TYPE_PARENTS = ['SET','SET2','SETB','SET2B'];
-
-function isSetType(typeParent) {
-  return SET_TYPE_PARENTS.includes(typeParent);
+function isSetType(typeVal) {
+  return (typeVal||'').startsWith('SET-');
 }
 
 function buildSKUParts(components) {
   // components = array of {type, shape, chain, finish, pieceColors}
   // PD drives chain/finish/colors; all shapes concatenated PD first
   const pd = components.find(c => (c.type||'').includes('-PD')) || components[0];
-  const typeParent = getTypeParentAbbr(pd.type || '');
+  const typeParent = deriveTypeParent(pd.type || '');
 
   // Shapes — PD first, then others, deduplicate
   const shapes = [];
@@ -999,7 +988,7 @@ function autoPopulateSKU() {
   const finishVal = (document.getElementById('f_finish')||{}).value || '';
   const colorsVal = (document.getElementById('f_pieceColors')||{}).value || '';
 
-  const typeParent = getTypeParentAbbr(typeVal);
+  const typeParent = deriveTypeParent(typeVal);
   let pkgSKU, etsySKU;
 
   if (isSetType(typeParent) && window.__addComponentParentId) {
@@ -1157,7 +1146,7 @@ async function saveRecord() {
       showToast('Saved to Google Sheets');
 
       // If this is a set component 2+, update all sibling rows with the new combined SKU
-      const savedTypeParent = getTypeParentAbbr(rec.type||'');
+      const savedTypeParent = deriveTypeParent(rec.type||'');
       if (isSetType(savedTypeParent) && window.__addComponentParentId) {
         const parent = data.find(r => r._id === window.__addComponentParentId);
         if (parent) {
