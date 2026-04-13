@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.27';
+const APP_VERSION = 'v1.8.28';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1323,15 +1323,29 @@ async function saveRecord() {
         showToast('Update failed: ' + result.message);
       } else {
         closeModal(); render();
-        // Refresh detail view if this SKU is currently selected
-        if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+        // Find and show the specific record that was edited
+        let editedRec = data.find(r => r._id === editingId);
+        if (!editedRec) {
+          for (const r of data) {
+            if (r._siblings) { const s = r._siblings.find(s=>s._id===editingId); if(s){editedRec=s;break;} }
+          }
+        }
+        if (editedRec) showDetail(editedRec);
+        else if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
         showToast('SKU updated in Google Sheets');
       }
     } catch(err) {
       // If CORS fails fall back to no-cors
       await fetch(API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(rec)});
       closeModal(); render();
-      if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+      let editedRec2 = data.find(r => r._id === editingId);
+      if (!editedRec2) {
+        for (const r of data) {
+          if (r._siblings) { const s = r._siblings.find(s=>s._id===editingId); if(s){editedRec2=s;break;} }
+        }
+      }
+      if (editedRec2) showDetail(editedRec2);
+      else if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
       showToast('SKU updated');
     }
   } else {
