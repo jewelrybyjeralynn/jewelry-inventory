@@ -190,14 +190,17 @@
         </div>
       </div>
       <div class="ms-wrap">
-        <div class="filter-lbl">Finish</div>
+        <div class="filter-lbl">Type</div>
         <button class="ms-btn" id="btnFinish" onclick="togglePanel('panelFinish')">All</button>
         <div class="ms-panel" id="panelFinish">
-          <label class="ms-option"><input type="checkbox" value="Clear" onchange="updateFilter('finish')"> Clear</label>
-          <label class="ms-option"><input type="checkbox" value="Gloss" onchange="updateFilter('finish')"> Gloss</label>
-          <label class="ms-option"><input type="checkbox" value="Matte" onchange="updateFilter('finish')"> Matte</label>
-          <label class="ms-option"><input type="checkbox" value="Resin" onchange="updateFilter('finish')"> Resin</label>
-          <div class="ms-clear" onclick="clearFilter('finish')">Clear selection</div>
+          <label class="ms-option"><input type="checkbox" value="SET" onchange="updateFilter('finish')"> SET</label>
+          <label class="ms-option"><input type="checkbox" value="NK" onchange="updateFilter('finish')"> NK = Necklace</label>
+          <label class="ms-option"><input type="checkbox" value="ER" onchange="updateFilter('finish')"> ER = Earrings</label>
+          <label class="ms-option"><input type="checkbox" value="BR" onchange="updateFilter('finish')"> BR = Bracelet</label>
+          <label class="ms-option"><input type="checkbox" value="RN" onchange="updateFilter('finish')"> RN = Ring</label>
+          <label class="ms-option"><input type="checkbox" value="KC" onchange="updateFilter('finish')"> KC = Keychain</label>
+          <label class="ms-option"><input type="checkbox" value="JD" onchange="updateFilter('finish')"> JD = Jewelry Dish</label>
+          <div class="ms-clear" onclick="clearFilter('finish')">Clear</div>
         </div>
       </div>
       <button class="btn" onclick="openAddModal()">+ Add SKU</button>
@@ -226,7 +229,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.28';
+const APP_VERSION = 'v1.8.29';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -568,10 +571,14 @@ function render() {
       const matchOther = others.length > 0 && r.etsyStatus && others.some(v=>v.toLowerCase()===r.etsyStatus.toLowerCase());
       if (!matchNoListing && !matchOther) return false;
     }
-    // Finish multi-select (contains match)
+    // Type filter (reusing 'finish' filter state)
     if (cf.length > 0) {
-      const finVal = (r.finish||'').toLowerCase();
-      if (!cf.some(v=>finVal.includes(v.toLowerCase()))) return false;
+      const typeVal = (r.type||'').toUpperCase();
+      const matches = cf.some(v => {
+        if (v === 'SET') return typeVal.startsWith('SET-');
+        return typeVal === v.toUpperCase();
+      });
+      if (!matches) return false;
     }
     return true;
   });
