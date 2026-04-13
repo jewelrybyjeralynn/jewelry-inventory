@@ -85,7 +85,13 @@
   .sib-desc{color:var(--text-dim);}
   .sib-chain{color:var(--text-muted);font-size:11px;white-space:nowrap;}
 
-  /* MODAL */
+  /* Searchable combobox for chain */
+  .combo-wrap{position:relative;width:100%;}
+  .combo-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--copper);z-index:300;max-height:180px;overflow-y:auto;display:none;}
+  .combo-list.open{display:block;}
+  .combo-opt{padding:6px 9px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;color:var(--text);}
+  .combo-opt:hover,.combo-opt.active{background:var(--surface2);color:var(--copper);}
+  .combo-empty{padding:6px 9px;font-size:11px;color:var(--text-muted);font-style:italic;}
   .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
   .modal-ov.open{display:flex;}
   .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;}
@@ -211,7 +217,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.5';
+const APP_VERSION = 'v1.6';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -761,13 +767,23 @@ function buildForm(rec, lockedKeys) {
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='chain') {
-      const opts = ['<option value=""></option>', ...chainOptions.map(o => {
-        const parts = [o.color, o.sku, o.style].filter(Boolean);
-        const label = parts.join(' — ');
-        const selected = o.sku===v ? 'selected' : '';
-        return `<option value="${o.sku}" ${selected}>${label}</option>`;
-      })].join('');
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="autoPopulateSKU()" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      const displayVal = v ? (() => {
+        const o = chainOptions.find(o => o.sku === v);
+        return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
+      })() : '';
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}">
+        <label>${f.label}</label>
+        <div class="combo-wrap">
+          <input type="text" id="f_${f.key}_display" value="${displayVal}" placeholder="Type to search chains..."
+            autocomplete="off"
+            oninput="filterChainList(this.value)"
+            onfocus="openChainList()"
+            onblur="setTimeout(()=>closeChainList(),200)"
+            ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+          <input type="hidden" id="f_${f.key}" value="${v}">
+          <div class="combo-list" id="chainComboList"></div>
+        </div>
+      </div>`;
     }
     if (f.type==='sel') {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
@@ -820,6 +836,51 @@ function buildForm(rec, lockedKeys) {
   // Wire up finish for auto-populate
   const finishSel = document.getElementById('f_finish');
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
+}
+
+function renderChainList(filtered) {
+  const list = document.getElementById('chainComboList');
+  if (!list) return;
+  if (!filtered.length) {
+    list.innerHTML = '<div class="combo-empty">No matches</div>';
+  } else {
+    list.innerHTML = filtered.map(o => {
+      const label = [o.color, o.sku, o.style].filter(Boolean).join(' — ');
+      return `<div class="combo-opt" onmousedown="selectChain('${o.sku}','${label.replace(/'/g,"\\'")}')">
+        ${label}
+      </div>`;
+    }).join('');
+  }
+  list.classList.add('open');
+}
+
+function filterChainList(q) {
+  const ql = q.toLowerCase();
+  const filtered = chainOptions.filter(o =>
+    o.sku.toLowerCase().includes(ql) ||
+    (o.style||'').toLowerCase().includes(ql) ||
+    (o.color||'').toLowerCase().includes(ql)
+  );
+  renderChainList(filtered);
+}
+
+function openChainList() {
+  const q = (document.getElementById('f_chain_display')||{}).value || '';
+  filterChainList(q);
+}
+
+function closeChainList() {
+  const list = document.getElementById('chainComboList');
+  if (list) list.classList.remove('open');
+}
+
+function selectChain(sku, label) {
+  const display = document.getElementById('f_chain_display');
+  const hidden  = document.getElementById('f_chain');
+  if (display) display.value = label;
+  if (hidden)  hidden.value  = sku;
+  closeChainList();
+  autoPopulateSKU();
 }
 
 function openAddModal() { editingId=null; window.__addComponentParentId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
