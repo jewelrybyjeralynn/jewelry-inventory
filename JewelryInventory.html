@@ -1,1 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jewelry Inventory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+  :root {
+    --bg:#1a1612;--surface:#231f1a;--surface2:#2e2923;--border:#3d3730;
+    --copper:#b87333;--copper-light:#d4944a;--copper-dim:#7a4d22;
+    --text:#e8ddd0;--text-dim:#9a8a7a;--text-muted:#5a4e44;
+    --active-bg:#1a3d25;--expired:#7a2020;--inactive:#4a4020;--sold:#203a5a;
+    --green:#4caf76;--yellow:#c8a840;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
 
+  /* LOADING */
+  #loadingScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;}
+  .load-logo{font-family:'Libre Baskerville',serif;font-size:26px;color:var(--copper);}
+  .load-msg{color:var(--text-muted);font-size:12px;}
+  .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--copper);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .load-error{color:#e07070;font-size:12px;background:rgba(200,50,50,.1);border:1px solid rgba(200,50,50,.3);padding:12px 18px;max-width:480px;text-align:center;line-height:1.6;display:none;}
+  .retry-btn{background:var(--copper);color:var(--bg);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;margin-top:6px;}
+  .retry-btn:hover{background:var(--copper-light);}
+
+  /* APP */
+  #appScreen{display:none;flex-direction:column;height:100vh;}
+  header{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:14px;background:var(--surface);flex-shrink:0;}
+  .logo{font-family:'Libre Baskerville',serif;font-size:15px;color:var(--copper);white-space:nowrap;}
+  .logo span{color:var(--text-muted);font-size:10px;font-family:'DM Mono',monospace;margin-left:6px;}
+  .search-wrap{flex:1;position:relative;}
+  #search{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px 7px 28px;font-family:'DM Mono',monospace;font-size:12px;outline:none;}
+  #search:focus{border-color:var(--copper);}
+  #search::placeholder{color:var(--text-muted);}
+  .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
+  .filters{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;}
+  .filter-wrap{display:flex;flex-direction:column;gap:3px;}
+  .filter-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+  select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;}
+  select:focus{border-color:var(--copper);}
+  .btn{background:var(--copper);color:var(--bg);border:none;padding:7px 13px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;}
+  .btn:hover{background:var(--copper-light);}
+  .btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn.sec:hover{border-color:var(--copper);color:var(--copper);}
+  .btn.rel{background:transparent;color:var(--text-muted);border:1px solid var(--border);font-size:11px;}
+  .btn.rel:hover{border-color:var(--copper-dim);color:var(--copper);}
+
+  .main{display:flex;flex:1;overflow:hidden;}
+  .list-pane{width:390px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+  .list-hdr{padding:7px 13px;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:11px;background:var(--surface);display:flex;justify-content:space-between;flex-shrink:0;}
+  .list-scroll{flex:1;overflow-y:auto;}
+  .sku-item{padding:8px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:grid;grid-template-columns:1fr auto;gap:3px;}
+  .sku-item:hover{background:var(--surface);}
+  .sku-item.active{background:var(--surface2);border-left:2px solid var(--copper);}
+  .sku-name{color:var(--copper-light);font-size:12px;font-weight:500;word-break:break-all;line-height:1.3;}
+  .sku-desc{color:var(--text-dim);font-size:11px;grid-column:1/-1;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sb{font-size:9px;padding:2px 5px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-weight:500;}
+  .sActive{background:var(--active-bg);color:var(--green);}
+  .sExpired{background:var(--expired);color:#ffaaaa;opacity:.8;}
+  .sInactive{background:var(--inactive);color:var(--yellow);}
+  .sSoldOut{background:var(--sold);color:#88bbdd;}
+  .snone{background:var(--surface2);color:var(--text-muted);}
+  .no-res{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:12px;}
+
+  .detail-pane{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px;}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);gap:8px;text-align:center;}
+  .empty-state .big{font-size:26px;}
+  .det-title{font-family:'Libre Baskerville',serif;font-size:18px;color:var(--copper-light);border-bottom:1px solid var(--border);padding-bottom:13px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .det-actions{display:flex;gap:7px;flex-shrink:0;}
+  .sec-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;}
+  .fld{display:flex;flex-direction:column;gap:3px;}
+  .flbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+  .fval{color:var(--text);font-size:12px;min-height:15px;}
+  .fval.empty{color:var(--text-muted);font-style:italic;}
+  .etsy-link{color:var(--copper);text-decoration:none;font-size:12px;}
+  .etsy-link:hover{color:var(--copper-light);text-decoration:underline;}
+  .sib-list{display:flex;flex-direction:column;gap:2px;}
+  .sib-item{padding:5px 10px;background:var(--surface);border:1px solid var(--border);display:flex;gap:12px;align-items:baseline;font-size:12px;}
+  .sib-item:hover{border-color:var(--copper-dim);}
+  .sib-current{border-left:2px solid var(--copper)!important;background:var(--surface2)!important;}
+  .sib-desc{color:var(--text-dim);}
+  .sib-chain{color:var(--text-muted);font-size:11px;white-space:nowrap;}
+
+  /* Searchable combobox for chain */
+  .combo-wrap{position:relative;width:100%;}
+  .combo-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--copper);z-index:300;max-height:180px;overflow-y:auto;display:none;}
+  .combo-list.open{display:block;}
+  .combo-opt{padding:6px 9px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;color:var(--text);}
+  .combo-opt:hover,.combo-opt.active{background:var(--surface2);color:var(--copper);}
+  .combo-empty{padding:6px 9px;font-size:11px;color:var(--text-muted);font-style:italic;}
+  .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-ov.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .modal-hdr{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:10;}
+  .modal-ttl{font-family:'Libre Baskerville',serif;color:var(--copper);font-size:15px;}
+  .modal-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1;}
+  .modal-x:hover{color:var(--text);}
+  .modal-body{padding:17px;flex:1;}
+  .fform{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+  .fg{display:flex;flex-direction:column;gap:4px;}
+  .fg.full{grid-column:1/-1;}
+  label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+  input[type=text],textarea,select.fs{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:12px;outline:none;width:100%;}
+  input[type=text]:focus,textarea:focus,select.fs:focus{border-color:var(--copper);}
+  input[type=text]::placeholder,textarea::placeholder{color:var(--text-muted);}
+  textarea{resize:vertical;min-height:52px;}
+  .modal-ftr{padding:11px 17px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:var(--surface);}
+
+  .last-updated{color:var(--text-muted);font-size:10px;white-space:nowrap;}
+
+  /* Multi-select checkbox filter */
+  .ms-wrap{display:flex;flex-direction:column;gap:3px;position:relative;}
+  .ms-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 24px 6px 8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;text-align:left;position:relative;min-width:110px;}
+  .ms-btn:after{content:'▾';position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:10px;}
+  .ms-btn.active-filter{border-color:var(--copper);color:var(--copper);}
+  .ms-panel{position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);z-index:150;min-width:160px;display:none;flex-direction:column;margin-top:2px;}
+  .ms-panel.open{display:flex;}
+  .ms-option{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;}
+  .ms-option:hover{background:var(--surface2);}
+  .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
+  .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
+  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;}
+  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-rows:repeat(4,auto);grid-auto-flow:column;}
+  .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .finish-fb-group{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(6,auto);grid-auto-flow:column;}
+  .finish-fb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--copper);padding:3px 8px;border-bottom:1px solid var(--border);grid-column:1/-1;}
+  .finish-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
+  .finish-opt:hover{background:var(--surface2);}
+  .finish-opt input{accent-color:var(--copper);cursor:pointer;}
+  .finish-fb-toggle{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:11px;color:var(--text-muted);cursor:pointer;margin-bottom:4px;}
+  .finish-fb-toggle input{accent-color:var(--copper);cursor:pointer;}
+  .color-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
+  .color-opt:hover{background:var(--surface2);}
+  .color-opt input{accent-color:var(--copper);cursor:pointer;}
+
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);}::-webkit-scrollbar-thumb:hover{background:var(--copper-dim);}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="load-logo">◈ Jewelry Inventory</div>
+  <div class="spinner"></div>
+  <div class="load-msg" id="loadMsg">Loading inventory from Google Sheets...</div>
+  <div class="load-error" id="loadError">
+    <span id="loadErrorMsg"></span><br>
+    <button class="retry-btn" onclick="loadFromSheets()">Retry</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <header>
+    <div class="logo">◈ Jewelry Inventory <span id="totalCount"></span><span id="appVersion" style="color:var(--text-muted);font-size:9px;margin-left:8px"></span></div>
+    <div class="search-wrap">
+      <span class="si">⌕</span>
+      <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
+    </div>
+    <div class="filters">
+      <div class="ms-wrap">
+        <div class="filter-lbl">Added To Etsy</div>
+        <button class="ms-btn" id="btnAdded" onclick="togglePanel('panelAdded')">All</button>
+        <div class="ms-panel" id="panelAdded">
+          <label class="ms-option"><input type="checkbox" value="Yes" onchange="updateFilter('added')"> Yes</label>
+          <label class="ms-option"><input type="checkbox" value="SOLD" onchange="updateFilter('added')"> SOLD</label>
+          <label class="ms-option"><input type="checkbox" value="NOT LISTED" onchange="updateFilter('added')"> NOT LISTED</label>
+          <label class="ms-option"><input type="checkbox" value="REDO" onchange="updateFilter('added')"> REDO</label>
+          <label class="ms-option"><input type="checkbox" value="blank" onchange="updateFilter('added')"> — Blank</label>
+          <div class="ms-clear" onclick="clearFilter('added')">Clear</div>
+        </div>
+      </div>
+      <div class="ms-wrap">
+        <div class="filter-lbl">Etsy Status</div>
+        <button class="ms-btn" id="btnStatus" onclick="togglePanel('panelStatus')">All</button>
+        <div class="ms-panel" id="panelStatus">
+          <label class="ms-option"><input type="checkbox" value="Active" onchange="updateFilter('status')"> Active</label>
+          <label class="ms-option"><input type="checkbox" value="Inactive" onchange="updateFilter('status')"> Inactive</label>
+          <label class="ms-option"><input type="checkbox" value="Expired" onchange="updateFilter('status')"> Expired</label>
+          <label class="ms-option"><input type="checkbox" value="Sold Out" onchange="updateFilter('status')"> Sold Out</label>
+          <label class="ms-option"><input type="checkbox" value="not listed" onchange="updateFilter('status')"> No Listing</label>
+          <div class="ms-clear" onclick="clearFilter('status')">Clear</div>
+        </div>
+      </div>
+      <div class="ms-wrap">
+        <div class="filter-lbl">Finish</div>
+        <button class="ms-btn" id="btnFinish" onclick="togglePanel('panelFinish')">All</button>
+        <div class="ms-panel" id="panelFinish">
+          <label class="ms-option"><input type="checkbox" value="Clear" onchange="updateFilter('finish')"> Clear</label>
+          <label class="ms-option"><input type="checkbox" value="Gloss" onchange="updateFilter('finish')"> Gloss</label>
+          <label class="ms-option"><input type="checkbox" value="Matte" onchange="updateFilter('finish')"> Matte</label>
+          <label class="ms-option"><input type="checkbox" value="Resin" onchange="updateFilter('finish')"> Resin</label>
+          <div class="ms-clear" onclick="clearFilter('finish')">Clear selection</div>
+        </div>
+      </div>
+      <button class="btn" onclick="openAddModal()">+ Add SKU</button>
+      <button class="btn rel" onclick="loadFromSheets(true)" title="Refresh from Google Sheets">↺ Refresh</button>
+      <div class="last-updated" id="lastUpdated"></div>
+    </div>
+  </header>
+  <div class="main">
+    <div class="list-pane">
+      <div class="list-hdr"><span id="listCount"></span><span style="color:var(--text-muted);font-size:10px">click to view</span></div>
+      <div class="list-scroll" id="listScroll"></div>
+    </div>
+    <div class="detail-pane" id="detailPane">
+      <div class="empty-state"><div class="big">◈</div><div>Select a SKU to view details</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modalOv">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl" id="modalTitle">Add New SKU</div><button class="modal-x" onclick="closeModal()">×</button></div>
+    <div class="modal-body"><div class="fform" id="formGrid"></div></div>
+    <div class="modal-ftr"><button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveRecord()">Save</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const APP_VERSION = 'v1.8.1';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
+const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
+const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec';
+
+let chainOptions = [];
+let pieceColorOptions = [];
+let finishOptions = [];
+let materialOptions = [];
+let typeOptions = [];
+let chainMetalMap = {}; // color name (lowercase) → chain metal abbreviation
+let shapeAbbrevMap = {}; // shape full name (lowercase) → abbreviation
+
+// Column header → internal key
+const COL_MAP = {
+  'Type':'type','Shape':'shape',
+  'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
+  'Object Description':'objectDescription',
+  'Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Material':'material',
+  'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
+  'Chain Or Drop Length':'chainOrDropLength','Chain\nLength':'chainOrDropLength',
+  'Chain/Bead/Clasp Details':'chainDetail','Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
+  'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
+  'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
+  'Finish':'finish','Clear Coat':'finish','Clear\nCoat':'finish',
+  'Chain Length Config':'chainConfig','Chain Config':'chainConfig',
+  'Extension Chain':'extChainOption','Ext Chain Option':'extChainOption','Ext\nChain\nOption':'extChainOption',
+  'Added To Etsy':'addedToEtsy','Added\nTo\nEtsy':'addedToEtsy',
+  'Gift Box':'giftBox','Gift\nBox':'giftBox',
+  'Colors':'pieceColors','Color Method':'colorMethod','Color':'colorMethod',
+  'Features & Details':'featuresDetails',
+  'Old SKU':'oldSKU',
+  'ETSY_Status':'etsyStatus','ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
+  'ETSY_URL':'etsyURL','ETSY URL':'etsyURL',
+  'Published_Update_Timestamp':'publishedTimestamp'
+};
+
+let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null;
+
+function normalizeHeader(h) {
+  return String(h||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function resolveKey(raw) {
+  const n = normalizeHeader(raw);
+  if (COL_MAP[n]) return COL_MAP[n];
+  for (const [k,v] of Object.entries(COL_MAP)) {
+    if (normalizeHeader(k)===n) return v;
+  }
+  return null;
+}
+
+// Minimal CSV parser that handles quoted fields with embedded commas/newlines
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i=0; i<text.length; i++) {
+    const c = text[i];
+    if (inQuote) {
+      if (c==='"') {
+        if (text[i+1]==='"') { field+='"'; i++; }
+        else inQuote = false;
+      } else field += c;
+    } else {
+      if (c==='"') { inQuote=true; }
+      else if (c===',') { row.push(field); field=''; }
+      else if (c==='\n') { row.push(field); rows.push(row); row=[]; field=''; }
+      else if (c==='\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field||row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function buildData(rows) {
+  if (rows.length < 2) throw new Error('No data rows found.');
+  const headers = rows[0];
+  const keys = headers.map(h => resolveKey(h));
+
+  const records = [];
+  for (let i=1; i<rows.length; i++) {
+    const row = rows[i];
+    const rec = {};
+    let hasData = false;
+    keys.forEach((key, ci) => {
+      if (!key) return;
+      const v = (row[ci]||'').trim();
+      rec[key] = v||null;
+      if (v) hasData = true;
+    });
+    if (hasData && rec.packagingSKU) records.push(rec);
+  }
+
+  // Group by packagingSKU
+  const map = new Map();
+  records.forEach((r,i) => {
+    r._id = i;
+    if (!map.has(r.packagingSKU)) map.set(r.packagingSKU,[]);
+    map.get(r.packagingSKU).push(r);
+  });
+  const primaries=[];
+  map.forEach(rows=>{ const p=rows[0]; p._siblings=rows; primaries.push(p); });
+  primaries.sort((a,b)=>(a.packagingSKU||'').localeCompare(b.packagingSKU||''));
+
+  addedRecords = JSON.parse(localStorage.getItem('jewelry_added')||'[]');
+  data = [...primaries, ...addedRecords];
+  return records.length;
+}
+
+async function loadFromSheets(isRefresh) {
+  // Show loading state
+  if (isRefresh) {
+    showToast('Refreshing from Google Sheets...');
+  } else {
+    document.getElementById('appScreen').style.display='none';
+    document.getElementById('loadingScreen').style.display='flex';
+    document.getElementById('loadError').style.display='none';
+    document.getElementById('loadMsg').textContent='Loading inventory from Google Sheets...';
+  }
+
+  try {
+    // Fetch with timeout helper
+    const fetchWithTimeout = (url, ms=10000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), ms);
+      return fetch(url, {signal: controller.signal}).finally(() => clearTimeout(id));
+    };
+
+    // Fetch inventory, findings, and abbreviations in parallel
+    const [resp, findingsResp, abbrevResp] = await Promise.all([
+      fetchWithTimeout(SHEET_URL + '&t=' + Date.now()),
+      fetchWithTimeout(FINDINGS_URL + '&t=' + Date.now()),
+      fetchWithTimeout(ABBREV_URL + '&t=' + Date.now())
+    ]);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — check the sheet is still published.`);
+    const text = await resp.text();
+    if (!text.trim()) throw new Error('Sheet returned empty data.');
+
+    // Parse findings SKUs
+    if (findingsResp.ok) {
+      const findingsText = await findingsResp.text();
+      const findingsRows = parseCSV(findingsText);
+      if (findingsRows.length > 1) {
+        const headers = findingsRows[0].map(h => (h||'').trim().toLowerCase());
+        const skuIdx = headers.indexOf('sku');
+        const styleIdx = headers.indexOf('style');
+        const colorIdx = headers.indexOf('color');
+        const includeIdx = headers.findIndex(h => h.includes('include'));
+        if (skuIdx !== -1) {
+          chainOptions = findingsRows.slice(1)
+            .filter(r => {
+              if (!r[skuIdx] || !r[skuIdx].trim()) return false;
+              if (includeIdx !== -1) return (r[includeIdx]||'').trim().toLowerCase() === 'yes';
+              return true;
+            })
+            .map(r => ({
+              sku: r[skuIdx].trim(),
+              style: styleIdx !== -1 && r[styleIdx] ? r[styleIdx].trim() : '',
+              color: colorIdx !== -1 && r[colorIdx] ? r[colorIdx].trim() : ''
+            }))
+            .sort((a,b) => {
+              const c = a.color.localeCompare(b.color);
+              return c !== 0 ? c : a.sku.localeCompare(b.sku);
+            });
+        }
+      }
+    }
+
+    // Parse piece color abbreviations and finish values
+    if (abbrevResp.ok) {
+      const abbrevText = await abbrevResp.text();
+      const abbrevRows = parseCSV(abbrevText);
+      if (abbrevRows.length > 1) {
+        const headers = abbrevRows[0].map(h => (h||'').trim().toLowerCase());
+        const typeIdx = headers.findIndex(h => h === 'type');
+        const colIdx = headers.indexOf('colors');
+        const finIdx = headers.findIndex(h => h.includes('finish'));
+        const matIdx = headers.findIndex(h => h === 'material');
+        const chainMetalIdx = headers.findIndex(h => h.includes('chain metal'));
+        if (typeIdx !== -1) {
+          typeOptions = abbrevRows.slice(1).map(r => (r[typeIdx]||'').trim()).filter(Boolean).sort();
+        }
+        const shapeIdx = headers.findIndex(h => h === 'shape');
+        if (shapeIdx !== -1) {
+          abbrevRows.slice(1).forEach(r => {
+            const val = (r[shapeIdx]||'').trim();
+            if (val && val.includes('=')) {
+              const abbr = val.split('=')[0].trim();
+              const name = val.split('=').slice(1).join('=').trim().toLowerCase();
+              shapeAbbrevMap[name] = abbr;
+            }
+          });
+        }
+        if (colIdx !== -1) {
+          pieceColorOptions = abbrevRows.slice(1)
+            .map(r => (r[colIdx]||'').trim()).filter(Boolean).sort();
+        }
+        if (finIdx !== -1) {
+          finishOptions = abbrevRows.slice(1)
+            .map(r => (r[finIdx]||'').trim()).filter(Boolean);
+        }
+        if (matIdx !== -1) {
+          materialOptions = abbrevRows.slice(1)
+            .map(r => (r[matIdx]||'').trim()).filter(Boolean).sort();
+        }
+        if (chainMetalIdx !== -1) {
+          abbrevRows.slice(1).forEach(r => {
+            const val = (r[chainMetalIdx]||'').trim();
+            if (val) {
+              const abbr = val.split('=')[0].trim();
+              const name = val.split('=').slice(1).join('=').trim().toLowerCase();
+              chainMetalMap[name] = abbr;
+            }
+          });
+        }
+      }
+    }
+
+    const rows = parseCSV(text);
+    const count = buildData(rows);
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('totalCount').textContent = `(${data.length} SKUs)`;
+
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('appScreen').style.display='flex';
+    document.getElementById('appVersion').textContent = APP_VERSION;
+    selectedIdx = null;
+    if (!isRefresh) {
+      // Default Etsy Status: Active, Inactive, Expired, No Listing
+      const defaultStatuses = ['Active', 'Inactive', 'Expired', 'not listed'];
+      filterState.status = defaultStatuses;
+      defaultStatuses.forEach(v => {
+        const cb = document.querySelector(`#panelStatus input[value="${v}"]`);
+        if (cb) cb.checked = true;
+      });
+      document.getElementById('btnStatus').textContent = 'Active, Inactive, Expired, No Listing';
+      document.getElementById('btnStatus').classList.add('active-filter');
+
+      // Default Added To Etsy: Yes, NOT LISTED, REDO
+      const defaultAdded = ['Yes', 'NOT LISTED', 'REDO'];
+      filterState.added = defaultAdded;
+      defaultAdded.forEach(v => {
+        const cb = document.querySelector(`#panelAdded input[value="${v}"]`);
+        if (cb) cb.checked = true;
+      });
+      document.getElementById('btnAdded').textContent = 'Yes, NOT LISTED, REDO';
+      document.getElementById('btnAdded').classList.add('active-filter');
+    }
+    render();
+    if (isRefresh) showToast(`Refreshed — ${count} rows loaded`);
+  } catch(err) {
+    if (isRefresh) {
+      showToast('Refresh failed: ' + err.message);
+    } else {
+      document.getElementById('loadMsg').style.display='none';
+      document.querySelector('.spinner').style.display='none';
+      const errEl = document.getElementById('loadError');
+      document.getElementById('loadErrorMsg').textContent = 'Could not load data: ' + err.message;
+      errEl.style.display='block';
+    }
+  }
+}
+
+// MULTI-SELECT FILTER STATE
+const filterState = { added: [], status: [], finish: [] };
+
+function getChecked(panelId) {
+  return [...document.querySelectorAll(`#${panelId} input[type=checkbox]:checked`)].map(c=>c.value);
+}
+
+function updateFilter(type) {
+  const panelMap = {added:'panelAdded', status:'panelStatus', finish:'panelFinish'};
+  const btnMap   = {added:'btnAdded',   status:'btnStatus',   finish:'btnFinish'};
+  filterState[type] = getChecked(panelMap[type]);
+  const btn = document.getElementById(btnMap[type]);
+  if (filterState[type].length === 0) {
+    btn.textContent = 'All';
+    btn.classList.remove('active-filter');
+  } else {
+    btn.textContent = filterState[type].join(', ');
+    btn.classList.add('active-filter');
+  }
+  selectedIdx = null;
+  render();
+}
+
+function clearFilter(type) {
+  const panelMap = {added:'panelAdded', status:'panelStatus', finish:'panelFinish'};
+  document.querySelectorAll(`#${panelMap[type]} input[type=checkbox]`).forEach(c=>c.checked=false);
+  updateFilter(type);
+}
+
+function togglePanel(id) {
+  // Close all other panels first
+  ['panelAdded','panelStatus','panelFinish'].forEach(p=>{
+    if (p!==id) document.getElementById(p).classList.remove('open');
+  });
+  document.getElementById(id).classList.toggle('open');
+}
+
+// Close panels when clicking outside
+document.addEventListener('click', e=>{
+  if (!e.target.closest('.ms-wrap')) {
+    ['panelAdded','panelStatus','panelFinish'].forEach(p=>document.getElementById(p).classList.remove('open'));
+  }
+});
+
+// RENDER
+function render() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const sf = filterState.status;
+  const af = filterState.added;
+  const cf = filterState.finish;
+
+  filtered = data.filter(r=>{
+    if (!r.packagingSKU) return false;
+    if (q) {
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
+      if (!s.includes(q)) return false;
+    }
+    // Added To Etsy multi-select
+    if (af.length > 0) {
+      const hasBlank = af.includes('blank');
+      const others = af.filter(v=>v!=='blank');
+      const matchBlank = hasBlank && !r.addedToEtsy;
+      const matchOther = others.length > 0 && others.includes(r.addedToEtsy);
+      if (!matchBlank && !matchOther) return false;
+    }
+    // Etsy Status multi-select
+    if (sf.length > 0) {
+      const hasNoListing = sf.includes('not listed');
+      const others = sf.filter(v=>v!=='not listed');
+      const matchNoListing = hasNoListing && !r.etsyStatus;
+      const matchOther = others.length > 0 && r.etsyStatus && others.some(v=>v.toLowerCase()===r.etsyStatus.toLowerCase());
+      if (!matchNoListing && !matchOther) return false;
+    }
+    // Finish multi-select (contains match)
+    if (cf.length > 0) {
+      const finVal = (r.finish||'').toLowerCase();
+      if (!cf.some(v=>finVal.includes(v.toLowerCase()))) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('listCount').textContent = `${filtered.length} of ${data.length}`;
+
+  const list = document.getElementById('listScroll');
+  if (!filtered.length) { list.innerHTML='<div class="no-res">No matching SKUs</div>'; return; }
+
+  list.innerHTML = filtered.map((r,i)=>{
+    const st=r.etsyStatus||'';
+    const sc=st.replace(/\s+/g,'');
+    const active = selectedIdx!==null && filtered[selectedIdx]===r;
+    const sibs = r._siblings || [r];
+    const descs = sibs.map(s=>s.objectDescription).filter(Boolean);
+    const descHtml = descs.map(d=>`<div class="sku-desc">${d}</div>`).join('');
+    return `<div class="sku-item ${active?'active':''}" onclick="selectItem(${i})">
+      <div class="sku-name">${r.packagingSKU}</div>
+      <div class="sb s${sc||'none'}">${st||r.addedToEtsy||'—'}</div>
+      ${descHtml}
+    </div>`;
+  }).join('');
+}
+
+function selectItem(i) { selectedIdx=i; render(); showDetail(filtered[i]); }
+
+function f(label,v,full) {
+  return `<div class="fld"${full?' style="grid-column:1/-1"':''}>
+    <div class="flbl">${label}</div>
+    <div class="fval ${v?'':'empty'}">${v||'—'}</div>
+  </div>`;
+}
+
+function formatSize(v) {
+  if (!v) return null;
+  const parts = v.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (parts.length === 2) return `${parts[0]} · drop: ${parts[1]}`;
+  return parts[0];
+}
+
+function showDetail(r, sibIdx) {
+  // Always get the full sibling group from the primary record
+  const primary = data.find(d => d.packagingSKU === r.packagingSKU && d._siblings) || r;
+  const sibs = primary._siblings || [r];
+  window.__sibs = sibs;
+  // The record to display is the requested one (default to first)
+  const displayRec = sibIdx !== undefined ? sibs[sibIdx] : (sibs.includes(r) ? r : sibs[0]);
+  const hasEtsy = displayRec.etsyURL;
+  document.getElementById('detailPane').innerHTML=`
+    <div class="det-title">
+      <div>${primary.packagingSKU}</div>
+      <div class="det-actions">
+        ${hasEtsy?`<a href="${displayRec.etsyURL}" target="_blank" class="btn sec" style="text-decoration:none;font-size:11px">Open in Etsy ↗</a>`:''}
+        <button class="btn sec" onclick="openAddComponent(${primary._id})">+ Component</button>
+        <button class="btn sec" onclick="openEditModal(${displayRec._id})">Edit</button>
+      </div>
+    </div>
+    <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
+      ${f('Description',displayRec.objectDescription)}${f('Wide x Height',formatSize(displayRec.wideHeight))}
+      ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
+      ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
+      
+    </div></div>
+    <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
+      ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Or Drop Length',displayRec.chainOrDropLength)}
+      ${f('Chain/Bead/Clasp Details',displayRec.chainDetail)}${f('Extension Chain',displayRec.extChainOption)}
+      ${displayRec.chainConfig?f('Chain Length Config',displayRec.chainConfig):''}
+      ${f('Finish',displayRec.finish)}
+      ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}
+    </div></div>
+    <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
+      ${f('New Etsy SKU',displayRec.newEtsySKU)}
+      ${f('Status',displayRec.etsyStatus)}
+      ${f('Added to Etsy',displayRec.addedToEtsy)}
+      ${hasEtsy?`<div class="fld"><div class="flbl">Etsy URL</div><a href="${displayRec.etsyURL}" target="_blank" class="etsy-link">View listing ↗</a></div>`:''}
+    </div></div>
+    ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length}) — click to view/edit</div><div class="sib-list">
+      ${sibs.map((s,si)=>{
+        const chainInfo = [s.chain, s.chainOrDropLength ? s.chainOrDropLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
+        const isCurrent = s === displayRec;
+        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[0],${si})" style="cursor:pointer">
+          <span class="sib-desc">${s.objectDescription||'—'}</span>
+          ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div></div>`:''}
+    <div><div class="sec-lbl">Reference</div><div class="fgrid">
+      ${f('Old SKU',displayRec.oldSKU)}${f('Characters',displayRec.characters)}
+      ${displayRec.featuresDetails?f('Features & Details',displayRec.featuresDetails,true):''}
+    </div></div>`;
+}
+
+// FORM
+const FIELDS=[
+  {key:'type',label:'Type',type:'type'},
+  {key:'shape',label:'Shape',third:true},
+  {key:'objectDescription',label:'Object Description',full:true},
+  {key:'wideHeight',label:'Wide x Height',third:true},
+  {key:'material',label:'Material',type:'material'},
+  {key:'chain',label:'Chain Or Hardware',type:'chain'},
+  {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
+  {key:'chainDetail',label:'Chain/Bead/Clasp Details'},
+  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
+  {key:'finish',label:'Finish',type:'multifinish'},
+  {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications'],necklaceOnly:true,third:true},
+  {key:'pieceColors',label:'Colors',type:'multicolors'},
+  {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
+  {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
+  {key:'giftBox',label:'Gift Box',third:true},
+  {key:'packagingSKU',label:'Packaging SKU',required:true},
+  {key:'newEtsySKU',label:'New Etsy SKU'}
+];
+
+const COMPONENT_BLANK = ['type','shape','objectDescription','wideHeight','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
+
+function buildForm(rec, lockedKeys) {
+  document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
+    const defaultVal = f.default || '';
+    const v = rec ? (rec[f.key] || defaultVal) : defaultVal;
+    const isLocked = lockedKeys && lockedKeys.includes(f.key);
+    if (f.key==='newEtsySKU') {
+      const len = v.length;
+      const color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+      return `<div class="fg">
+        <label style="display:flex;justify-content:space-between">
+          <span>New Etsy SKU</span>
+          <span id="skuCounter" style="color:${color};font-weight:500">${len}/32</span>
+        </label>
+        <input type="text" id="f_newEtsySKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="New Etsy SKU" maxlength="40"
+          oninput="this.dataset.manualEdit='1'"
+          ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+      </div>`;
+    }
+    if (f.key==='packagingSKU') {
+      const len = v.length;
+      const color = len>38?'#e07070':len>34?'#c8a840':'var(--text-muted)';
+      return `<div class="fg"><label style="display:flex;justify-content:space-between">
+          <span>Packaging SKU${f.required?' *':''}</span>
+          <span id="pkgCounter" style="color:${color};font-weight:500">${len}/38</span>
+        </label>
+        <input type="text" id="f_packagingSKU" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Packaging SKU"
+          oninput="this.dataset.manualEdit='1'"
+          ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+      </div>`;
+    }
+    if (f.type==='type') {
+      const opts = ['<option value=""></option>', ...typeOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const selected = abbr===v || o===v ? 'selected' : '';
+        return `<option value="${abbr}" ${selected}>${o}</option>`;
+      })].join('');
+      return `<div class="fg" style="grid-column:span 2"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='material') {
+      const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='finish') {
+      const opts = ['<option value=""></option>', ...finishOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const fullName = o.split('=').slice(1).join('=').trim();
+        const selected = abbr===v || fullName===v || o===v ? 'selected' : '';
+        return `<option value="${abbr}" ${selected}>${o}</option>`;
+      })].join('');
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='multifinish') {
+      const isFB = v && (v.includes('(F)') || v.includes('(B)'));
+      const BASE_FINISHES = ['Alcohol Ink','Aluminum','Clear','Copper','Flame','Gloss','Matte','Patina','Resin','Satin','Solder','UV Resin'];
+      // Parse current value back to checkboxes
+      let frontChecked = [], backChecked = [], sameChecked = [];
+      if (v) {
+        if (isFB) {
+          v.split('&').forEach(part => {
+            const p = part.trim();
+            const name = p.replace(/\(F\)|\(B\)/g,'').trim();
+            if (p.includes('(F)')) frontChecked.push(name);
+            else if (p.includes('(B)')) backChecked.push(name);
+            else { frontChecked.push(name); backChecked.push(name); }
+          });
+        } else {
+          sameChecked = v.split('&').map(p=>p.trim()).filter(Boolean);
+        }
+      }
+      const makeCheckboxes = (id, checked) => BASE_FINISHES.map(fin =>
+        `<label class="finish-opt"><input type="checkbox" class="finish-cb" data-panel="${id}" value="${fin}" ${checked.includes(fin)?'checked':''} onchange="onFinishChange()"> ${fin}</label>`
+      ).join('');
+      if (isFB) {
+        return `<div class="fg" style="grid-column:1/-1">
+          <label>${f.label}</label>
+          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" checked onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-fb-wrap" id="finishFBWrap">
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', frontChecked)}</div>
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Back</div>${makeCheckboxes('back', backChecked)}</div>
+          </div>
+          <input type="hidden" id="f_finish" value="${v}">
+        </div>`;
+      } else {
+        return `<div class="fg" style="grid-column:1/-1">
+          <label>${f.label}</label>
+          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-panel" id="finishSamePanel">${makeCheckboxes('same', sameChecked)}</div>
+          <div class="finish-fb-wrap" id="finishFBWrap" style="display:none">
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', [])}</div>
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Back</div>${makeCheckboxes('back', [])}</div>
+          </div>
+          <input type="hidden" id="f_finish" value="${v}">
+        </div>`;
+      }
+    }
+    if (f.type==='multicolors') {
+      const selectedRaw = v ? v.split(',').map(s=>s.trim()) : [];
+      const checkboxes = pieceColorOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const fullName = o.split('=').slice(1).join('=').trim();
+        // Match on abbreviation OR full name (handles both old and new stored values)
+        const checked = selectedRaw.includes(abbr) || selectedRaw.includes(fullName) ? 'checked' : '';
+        return `<label class="color-opt"><input type="checkbox" class="color-cb" value="${abbr}" ${checked}> ${o}</label>`;
+      }).join('');
+      return `<div class="fg ${f.full?'full':''}" style="grid-column:1/-1">
+        <label>${f.label}</label>
+        <div class="color-panel" id="f_${f.key}_panel">${checkboxes}</div>
+        <input type="hidden" id="f_${f.key}" value="${v}">
+      </div>`;
+    }
+    if (f.type==='colors') {
+      const opts = ['<option value=""></option>', ...pieceColorOptions.map(o => {
+        const abbr = o.split('=')[0].trim();
+        const selected = abbr===v || o===v ? 'selected' : '';
+        return `<option value="${abbr}" ${selected}>${o}</option>`;
+      })].join('');
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='chain') {
+      const displayVal = v ? (() => {
+        const o = chainOptions.find(o => o.sku === v);
+        return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
+      })() : '';
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}">
+        <label>${f.label}</label>
+        <div class="combo-wrap">
+          <input type="text" id="f_${f.key}_display" value="${displayVal}" placeholder="Type to search chains..."
+            autocomplete="off"
+            oninput="filterChainList(this.value)"
+            onfocus="openChainList()"
+            onblur="setTimeout(()=>closeChainList(),200)"
+            ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+          <input type="hidden" id="f_${f.key}" value="${v}">
+          <div class="combo-list" id="chainComboList"></div>
+        </div>
+      </div>`;
+    }
+    if (f.type==='sel') {
+      const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+      if (f.necklaceOnly) {
+        const necklaceTypes = ['NK','SET-PD'];
+        const currentType = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
+        const disabled = !necklaceTypes.includes(currentType);
+        return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${disabled?'disabled':''} ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      }
+      return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    }
+    const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+    return `<div class="fg" style="${colSpan}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
+  }).join('');
+
+  // Wire up live counter for New Etsy SKU
+  const skuInput = document.getElementById('f_newEtsySKU');
+  if (skuInput) {
+    skuInput.addEventListener('input', () => {
+      const len = skuInput.value.length;
+      const counter = document.getElementById('skuCounter');
+      counter.textContent = `${len}/32`;
+      counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+    });
+  }
+  // Wire up live counter for Packaging SKU
+  const pkgInput = document.getElementById('f_packagingSKU');
+  if (pkgInput) {
+    pkgInput.addEventListener('input', () => {
+      const len = pkgInput.value.length;
+      const counter = document.getElementById('pkgCounter');
+      if (counter) {
+        counter.textContent = `${len}/38`;
+        counter.style.color = len>38?'#e07070':len>34?'#c8a840':'var(--text-muted)';
+      }
+    });
+  }
+  // Wire up color checkboxes to hidden input
+  const colorPanel = document.getElementById('f_pieceColors_panel');
+  if (colorPanel) {
+    colorPanel.addEventListener('change', () => {
+      const checked = [...colorPanel.querySelectorAll('.color-cb:checked')].map(c=>c.value);
+      document.getElementById('f_pieceColors').value = checked.join(', ');
+      autoPopulateSKU();
+    });
+  }
+  // Wire up shape input for auto-populate
+  const shapeInput = document.getElementById('f_shape');
+  if (shapeInput) shapeInput.addEventListener('input', autoPopulateSKU);
+  // Wire up finish for auto-populate
+  const finishSel = document.getElementById('f_finish');
+  if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
+}
+
+function renderChainList(filtered) {
+  const list = document.getElementById('chainComboList');
+  if (!list) return;
+  if (!filtered.length) {
+    list.innerHTML = '<div class="combo-empty">No matches</div>';
+  } else {
+    list.innerHTML = filtered.map(o => {
+      const label = [o.color, o.sku, o.style].filter(Boolean).join(' — ');
+      return `<div class="combo-opt" onmousedown="selectChain('${o.sku}','${label.replace(/'/g,"\\'")}')">
+        ${label}
+      </div>`;
+    }).join('');
+  }
+  list.classList.add('open');
+}
+
+function filterChainList(q) {
+  const ql = q.toLowerCase();
+  const filtered = chainOptions.filter(o =>
+    o.sku.toLowerCase().includes(ql) ||
+    (o.style||'').toLowerCase().includes(ql) ||
+    (o.color||'').toLowerCase().includes(ql)
+  );
+  renderChainList(filtered);
+}
+
+function openChainList() {
+  const q = (document.getElementById('f_chain_display')||{}).value || '';
+  filterChainList(q);
+}
+
+function closeChainList() {
+  const list = document.getElementById('chainComboList');
+  if (list) list.classList.remove('open');
+}
+
+function selectChain(sku, label) {
+  const display = document.getElementById('f_chain_display');
+  const hidden  = document.getElementById('f_chain');
+  if (display) display.value = label;
+  if (hidden)  hidden.value  = sku;
+  closeChainList();
+  autoPopulateSKU();
+}
+
+// Base finish abbreviation map for fallback concatenation
+const BASE_FINISH_ABBR = {
+  'Flame':'FLM','Matte':'MTT','Clear':'CLR','Gloss':'GLS','Resin':'RES',
+  'Solder':'SLD','Patina':'PAT','Satin':'SAT','UV Resin':'UVR',
+  'Alcohol Ink':'ALK','Copper':'COP','Aluminum':'ALU'
+};
+
+function getFinishAbbr(fullName) {
+  // Look up in finishOptions first (exact match on full name)
+  const match = finishOptions.find(o => {
+    const name = o.split('=').slice(1).join('=').trim();
+    return name === fullName;
+  });
+  if (match) return match.split('=')[0].trim();
+  // Fallback: concatenate individual abbreviations
+  return fullName.split('&').map(p => {
+    const n = p.replace(/\(F\)|\(B\)/g,'').trim();
+    return BASE_FINISH_ABBR[n] || n;
+  }).join('');
+}
+
+function buildFinishFullName(sameArr, frontArr, backArr) {
+  if (frontArr.length || backArr.length) {
+    // Front/back mode
+    const parts = [];
+    frontArr.forEach(f => parts.push(`${f}(F)`));
+    backArr.forEach(b => parts.push(`${b}(B)`));
+    return parts.join(' & ');
+  }
+  return sameArr.join(' & ');
+}
+
+function getCheckedFinishes(panelId) {
+  return [...document.querySelectorAll(`.finish-cb[data-panel="${panelId}"]:checked`)].map(c=>c.value);
+}
+
+function onFinishFBToggle() {
+  const tog = document.getElementById('finishFBToggle');
+  const samePanel = document.getElementById('finishSamePanel');
+  const fbWrap = document.getElementById('finishFBWrap');
+  if (tog && tog.checked) {
+    if (samePanel) samePanel.style.display = 'none';
+    if (fbWrap) fbWrap.style.display = 'grid';
+  } else {
+    if (samePanel) samePanel.style.display = 'grid';
+    if (fbWrap) fbWrap.style.display = 'none';
+  }
+  onFinishChange();
+}
+
+function onFinishChange() {
+  const tog = document.getElementById('finishFBToggle');
+  const isFB = tog && tog.checked;
+  let fullName, abbr;
+  if (isFB) {
+    const front = getCheckedFinishes('front');
+    const back  = getCheckedFinishes('back');
+    fullName = buildFinishFullName([], front, back);
+  } else {
+    const same = getCheckedFinishes('same');
+    fullName = buildFinishFullName(same, [], []);
+  }
+  // Look up abbreviation
+  abbr = getFinishAbbr(fullName);
+  // Check if this is a new combo not in finishOptions
+  const isNew = fullName && !finishOptions.some(o => o.split('=').slice(1).join('=').trim() === fullName);
+  if (isNew && fullName) {
+    const newEntry = `${abbr} = ${fullName}`;
+    finishOptions.push(newEntry);
+    // Write to sheet async (fire and forget)
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({_action: 'addFinishAbbr', entry: newEntry})
+    }).catch(()=>{});
+  }
+  const hidden = document.getElementById('f_finish');
+  if (hidden) hidden.value = fullName;
+  autoPopulateSKU();
+}
+
+function openAddModal() { editingId=null; window.__addComponentParentId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
+
+// SKU auto-population helpers
+function toCamelCase(str) {
+  return (str||'').split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+}
+
+function getChainMetal(chainSku) {
+  if (!chainSku) return '';
+  const found = chainOptions.find(o => o.sku === chainSku);
+  if (!found) return '';
+  const colorLower = (found.color||'').toLowerCase().trim();
+  // Match against chainMetalMap (built from Abbreviations_Published Chain Metal column)
+  for (const [name, abbr] of Object.entries(chainMetalMap)) {
+    if (colorLower.includes(name) || name.includes(colorLower)) return abbr;
+  }
+  return '';
+}
+
+function finishReadable(fullName) {
+  // e.g. "Flame & Matte" → "FlameM", "Solder & Flame & Matte" → "SolderFM"
+  if (!fullName) return '';
+  const wordAbbr = {
+    'flame':'F','matte':'M','clear':'C','gloss':'G','resin':'R',
+    'patina':'Patina','solder':'Solder','alcohol':'Alcohol','ink':'Ink',
+    'uv':'UV','satin':'Satin','copper':'Copper','aluminum':'Aluminum'
+  };
+  const parts = fullName.split(/\s*&\s*/).map(p => p.trim());
+  return parts.map((p, i) => {
+    const lower = p.toLowerCase();
+    if (i === 0) {
+      // First part: use full word but CamelCase-ify multi-word (e.g. "Alcohol Ink")
+      return p.split(/\s+/).map((w,wi) => wi===0 ? w : (wordAbbr[w.toLowerCase()]||w)).join('');
+    }
+    // Subsequent parts: use abbreviation
+    const words = p.split(/\s+/);
+    return words.map(w => wordAbbr[w.toLowerCase()] || w).join('');
+  }).join('');
+}
+
+function finishAbbr(fullName) {
+  // Returns the abbreviation from finishOptions e.g. "Flame & Matte" → "FM"
+  if (!fullName) return '';
+  const match = finishOptions.find(o => {
+    const abbr = o.split('=')[0].trim();
+    const name = o.split('=').slice(1).join('=').trim();
+    return abbr === fullName || name === fullName;
+  });
+  return match ? match.split('=')[0].trim() : fullName;
+}
+
+function isSetType(typeVal) {
+  return (typeVal||'').startsWith('SET-');
+}
+
+function deriveTypeParent(typeVal) {
+  // All set types use 'SET' as TypeParent prefix in SKU
+  // Non-set types use their own abbreviation
+  if (isSetType(typeVal)) return 'SET';
+  return (typeVal||'').split('=')[0].trim() || typeVal;
+}
+
+function onTypeChange() {
+  const currentRec = {};
+  FIELDS.forEach(f => {
+    const el = document.getElementById('f_' + f.key);
+    if (el) currentRec[f.key] = el.value;
+  });
+  const lockedKeys = document.getElementById('f_packagingSKU') &&
+    document.getElementById('f_packagingSKU').readOnly ? COMPONENT_LOCKED : null;
+  buildForm(currentRec, lockedKeys);
+  autoPopulateSKU();
+}
+
+function isSetType(typeVal) {
+  return (typeVal||'').startsWith('SET-');
+}
+
+function buildSKUParts(components) {
+  // components = array of {type, shape, chain, finish, pieceColors}
+  // PD drives chain/finish/colors; all shapes concatenated PD first
+  const pd = components.find(c => (c.type||'').includes('-PD')) || components[0];
+  const typeParent = deriveTypeParent(pd.type || '');
+
+  // Shapes — PD first, then others, deduplicate
+  const shapes = [];
+  const pdShape = shapeAbbrevMap[(pd.shape||'').toLowerCase().trim()] || toCamelCase(pd.shape||'');
+  if (pdShape) shapes.push(pdShape);
+  components.filter(c => c !== pd).forEach(c => {
+    const s = shapeAbbrevMap[(c.shape||'').toLowerCase().trim()] || toCamelCase(c.shape||'');
+    if (s && s !== pdShape) shapes.push(s);
+  });
+  const shapeStr = shapes.join('');
+
+  const metal = getChainMetal(pd.chain||'');
+  const finReadable = finishReadable(pd.finish||'');
+  const finShort = finishAbbr(pd.finish||'');
+  const colorAbbrs = (pd.pieceColors||'').split(',').map(c=>c.trim()).filter(Boolean).join('');
+
+  const pkgBase  = [typeParent, shapeStr, metal, finReadable].filter(Boolean).join('-');
+  const etsyBase = [typeParent, shapeStr, metal, finShort].filter(Boolean).join('-');
+
+  const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
+  const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
+
+  return {
+    pkgSKU:  pkgFull.length  <= 38 ? pkgFull  : pkgBase.slice(0, 38),
+    etsySKU: etsyFull.length <= 32 ? etsyFull : etsyBase.slice(0, 32)
+  };
+}
+
+function autoPopulateSKU() {
+  const typeVal   = (document.getElementById('f_type')||{}).value || '';
+  const shapeVal  = (document.getElementById('f_shape')||{}).value || '';
+  const chainVal  = (document.getElementById('f_chain')||{}).value || '';
+  const finishVal = (document.getElementById('f_finish')||{}).value || '';
+  const colorsVal = (document.getElementById('f_pieceColors')||{}).value || '';
+
+  const typeParent = deriveTypeParent(typeVal);
+  let pkgSKU, etsySKU;
+
+  if (isSetType(typeParent) && window.__addComponentParentId) {
+    // + Component form — combine parent (PD) data with current form data
+    const parent = data.find(r => r._id === window.__addComponentParentId);
+    const pdComp = parent ? {
+      type: parent.type || '',
+      shape: parent.shape || '',
+      chain: parent.chain || '',
+      finish: parent.finish || '',
+      pieceColors: parent.pieceColors || ''
+    } : null;
+    const currentComp = {type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal};
+    const components = pdComp ? [pdComp, currentComp] : [currentComp];
+    ({pkgSKU, etsySKU} = buildSKUParts(components));
+  } else {
+    ({pkgSKU, etsySKU} = buildSKUParts([{type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal}]));
+  }
+
+  const pkgEl  = document.getElementById('f_packagingSKU');
+  const etsyEl = document.getElementById('f_newEtsySKU');
+  if (pkgEl  && !pkgEl.dataset.manualEdit)  pkgEl.value  = pkgSKU;
+  if (etsyEl && !etsyEl.dataset.manualEdit) etsyEl.value = etsySKU;
+
+  // Update pkg counter
+  const pkgCounter = document.getElementById('pkgCounter');
+  if (pkgCounter && pkgEl) {
+    const plen = pkgEl.value.length;
+    pkgCounter.textContent = `${plen}/38`;
+    pkgCounter.style.color = plen>38?'#e07070':plen>34?'#c8a840':'var(--text-muted)';
+  }
+  // Update etsy counter
+  const counter = document.getElementById('skuCounter');
+  if (counter && etsyEl) {
+    const len = etsyEl.value.length;
+    counter.textContent = `${len}/32`;
+    counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
+  }
+}
+
+function openEditModal(id) {
+  editingId = id;
+  // Search data array first, then search inside _siblings
+  let rec = data.find(r => r._id === id);
+  if (!rec) {
+    for (const r of data) {
+      if (r._siblings) {
+        const sib = r._siblings.find(s => s._id === id);
+        if (sib) { rec = sib; break; }
+      }
+    }
+  }
+  document.getElementById('modalTitle').textContent = 'Edit SKU';
+  buildForm(rec, null);
+  document.getElementById('modalOv').classList.add('open');
+}
+
+function openAddComponent(parentId) {
+  editingId = null;
+  window.__addComponentParentId = parentId;
+  const parent = data.find(r=>r._id===parentId);
+  const prefill = Object.assign({}, parent);
+  COMPONENT_BLANK.forEach(k => prefill[k] = '');
+  document.getElementById('modalTitle').textContent = 'Add Component to ' + parent.packagingSKU;
+  buildForm(prefill, COMPONENT_LOCKED);
+  document.getElementById('modalOv').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; }
+
+async function saveRecord() {
+  const rec={};
+  FIELDS.forEach(f=>{
+    const el=document.getElementById('f_'+f.key);
+    rec[f.key]=el?el.value.trim():'';
+  });
+  if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
+
+  // Auto-populate characters from newEtsySKU length
+  rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
+
+  // Finish is already stored as full name from the checkbox UI
+  // Only expand if it looks like an abbreviation (no spaces, no &)
+  if (rec.finish && !rec.finish.includes('&') && !rec.finish.includes(' ')) {
+    const match = finishOptions.find(o => o.split('=')[0].trim() === rec.finish);
+    if (match) rec.finish = match.split('=').slice(1).join('=').trim();
+  }
+
+  // Expand color abbreviations to full names, comma separated
+  if (rec.pieceColors) {
+    rec.pieceColors = rec.pieceColors.split(',').map(abbr => {
+      const a = abbr.trim();
+      const match = pieceColorOptions.find(o => o.split('=')[0].trim() === a);
+      return match ? match.split('=').slice(1).join('=').trim() : a;
+    }).join(', ');
+  }
+
+  if (editingId!==null) {
+    // Find record - could be in data directly or inside a _siblings array
+    let idx = data.findIndex(r => r._id === editingId);
+    let targetRec = idx !== -1 ? data[idx] : null;
+    if (!targetRec) {
+      for (const r of data) {
+        if (r._siblings) {
+          const sib = r._siblings.find(s => s._id === editingId);
+          if (sib) { targetRec = sib; break; }
+        }
+      }
+    }
+    const original = targetRec ? {...targetRec} : {};
+    if (targetRec) Object.assign(targetRec, rec);
+    rec._action = 'update';
+    rec._originalDescription = original.objectDescription || rec.objectDescription;
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify(rec)
+      });
+      const result = await resp.json();
+      if (result.status === 'error') {
+        showToast('Update failed: ' + result.message);
+      } else {
+        closeModal(); render();
+        // Refresh detail view if this SKU is currently selected
+        if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+        showToast('SKU updated in Google Sheets');
+      }
+    } catch(err) {
+      // If CORS fails fall back to no-cors
+      await fetch(API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(rec)});
+      closeModal(); render();
+      if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
+      showToast('SKU updated');
+    }
+  } else {
+    // Post to Google Sheet
+    showToast('Saving to Google Sheets...');
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify(rec)
+      });
+      // no-cors means we can't read the response, but if no exception it went through
+      rec._id=Date.now(); rec._siblings=[rec];
+      const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
+      if (existing) {
+        existing._siblings.push(rec);
+        rec._siblings = existing._siblings;
+      } else {
+        data.push(rec);
+      }
+      addedRecords.push(rec);
+      try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
+      closeModal(); render();
+      showToast('Saved to Google Sheets');
+
+      // If this is a set component 2+, update all sibling rows with the new combined SKU
+      const savedTypeParent = deriveTypeParent(rec.type||'');
+      if (isSetType(savedTypeParent) && window.__addComponentParentId) {
+        const parent = data.find(r => r._id === window.__addComponentParentId);
+        if (parent) {
+          const oldSKU = parent.packagingSKU;
+          const newPkgSKU = rec.packagingSKU;
+          const newEtsySKU = rec.newEtsySKU;
+          if (oldSKU !== newPkgSKU) {
+            // Update parent in memory
+            parent.packagingSKU = newPkgSKU;
+            parent.newEtsySKU = newEtsySKU;
+            // Send updateSKU to sheet — updates all rows with old Packaging SKU
+            try {
+              await fetch(API_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'text/plain'},
+                body: JSON.stringify({
+                  _action: 'updateSKU',
+                  _oldPackagingSKU: oldSKU,
+                  packagingSKU: newPkgSKU,
+                  newEtsySKU: newEtsySKU
+                })
+              });
+            } catch(e) {}
+          }
+        }
+      }
+
+      // Auto-open + Component form for the SKU just saved
+      setTimeout(() => openAddComponent(rec._id), 300);
+    } catch(err) {
+      showToast('Save failed: ' + err.message);
+    }
+  }
+}
+
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+document.getElementById('search').addEventListener('input',()=>{selectedIdx=null;render();});
+document.getElementById('modalOv').addEventListener('click',function(e){if(e.target===this && e.target.id==='modalOv' && false)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// Kick off load
+loadFromSheets();
+</script>
+</body>
+</html>
