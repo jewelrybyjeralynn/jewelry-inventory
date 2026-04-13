@@ -123,6 +123,7 @@
   .ms-option:hover{background:var(--surface2);}
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
+  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);}
   .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:repeat(3,1fr);}
   .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .finish-fb-group{border:1px solid var(--border);background:var(--bg);}
@@ -740,7 +741,7 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='multifinish') {
       const isFB = v && (v.includes('(F)') || v.includes('(B)'));
-      const BASE_FINISHES = ['Flame','Matte','Clear','Gloss','Resin','Solder','Patina','Satin','UV Resin','Alcohol Ink','Copper','Aluminum'];
+      const BASE_FINISHES = ['Alcohol Ink','Aluminum','Clear','Copper','Flame','Gloss','Matte','Patina','Resin','Satin','Solder','UV Resin'];
       // Parse current value back to checkboxes
       let frontChecked = [], backChecked = [], sameChecked = [];
       if (v) {
