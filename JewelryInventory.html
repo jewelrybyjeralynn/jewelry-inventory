@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.18';
+const APP_VERSION = 'v1.8.19';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1363,7 +1363,7 @@ async function saveRecord() {
             parent.newEtsySKU = newEtsySKU;
             // Send updateSKU to sheet — updates all rows with old Packaging SKU
             try {
-              await fetch(API_URL, {
+              const skuResp = await fetch(API_URL, {
                 method: 'POST',
                 headers: {'Content-Type': 'text/plain'},
                 body: JSON.stringify({
@@ -1373,8 +1373,13 @@ async function saveRecord() {
                   newEtsySKU: newEtsySKU
                 })
               });
-            } catch(e) {}
-          }
+              const skuResult = await skuResp.json().catch(()=>({}));
+              if (skuResult.status === 'error') {
+                showToast('SKU update failed: ' + skuResult.message);
+              } else {
+                showToast(`Updated ${skuResult.rowsUpdated || 0} rows to new SKU`);
+              }
+            } catch(e) { showToast('SKU update error: ' + e.message); }
         }
       }
 
