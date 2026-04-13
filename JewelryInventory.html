@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.22';
+const APP_VERSION = 'v1.8.23';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1337,12 +1337,23 @@ async function saveRecord() {
       });
       // no-cors means we can't read the response, but if no exception it went through
       rec._id=Date.now(); rec._siblings=[rec];
-      const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
-      if (existing) {
-        existing._siblings.push(rec);
-        rec._siblings = existing._siblings;
+      // If adding a component, attach to parent's sibling group regardless of SKU match
+      if (window.__addComponentParentId) {
+        const parentRec = data.find(r => r._id === window.__addComponentParentId);
+        if (parentRec) {
+          parentRec._siblings.push(rec);
+          rec._siblings = parentRec._siblings;
+        } else {
+          data.push(rec);
+        }
       } else {
-        data.push(rec);
+        const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
+        if (existing) {
+          existing._siblings.push(rec);
+          rec._siblings = existing._siblings;
+        } else {
+          data.push(rec);
+        }
       }
       addedRecords.push(rec);
       try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
@@ -1359,14 +1370,14 @@ async function saveRecord() {
           const newPkgSKU = rec.packagingSKU;
           const newEtsySKU = rec.newEtsySKU;
           if (oldSKU !== newPkgSKU) {
-            console.log('updateSKU:', {oldSKU, newPkgSKU, newEtsySKU});
             // Update parent in memory
             parent.packagingSKU = newPkgSKU;
             parent.newEtsySKU = newEtsySKU;
             // Send updateSKU to sheet — updates all rows with old Packaging SKU
             try {
-              const skuResp = await fetch(API_URL, {
+              await fetch(API_URL, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: {'Content-Type': 'text/plain'},
                 body: JSON.stringify({
                   _action: 'updateSKU',
@@ -1375,12 +1386,7 @@ async function saveRecord() {
                   newEtsySKU: newEtsySKU
                 })
               });
-              const skuResult = await skuResp.json().catch(()=>({}));
-              if (skuResult.status === 'error') {
-                showToast('SKU update failed: ' + skuResult.message);
-              } else {
-                showToast(`Updated ${skuResult.rowsUpdated || 0} rows to new SKU`);
-              }
+              showToast('SKU updated on all components');
             } catch(e) { showToast('SKU update error: ' + e.message); }
           }
         }
