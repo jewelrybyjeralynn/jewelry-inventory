@@ -124,7 +124,7 @@
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
   .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;}
-  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-rows:repeat(4,auto);grid-auto-flow:column;}
+  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-rows:repeat(3,auto);grid-auto-flow:column;}
   .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .finish-fb-group{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(6,auto);grid-auto-flow:column;}
   .finish-fb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--copper);padding:3px 8px;border-bottom:1px solid var(--border);grid-column:1/-1;}
@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.4';
+const APP_VERSION = 'v1.8.6';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -670,13 +670,13 @@ const FIELDS=[
   {key:'shape',label:'Shape',third:true},
   {key:'objectDescription',label:'Object Description',full:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
-  {key:'material',label:'Material',type:'material'},
+  {key:'material',label:'Material',type:'material',third:true},
+  {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications'],necklaceOnly:true,third:true},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
   {key:'finish',label:'Finish',type:'multifinish'},
-  {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications'],necklaceOnly:true,third:true},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
