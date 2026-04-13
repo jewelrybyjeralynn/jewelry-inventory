@@ -123,7 +123,15 @@
   .ms-option:hover{background:var(--surface2);}
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
-  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);}
+  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:repeat(3,1fr);}
+  .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .finish-fb-group{border:1px solid var(--border);background:var(--bg);}
+  .finish-fb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--copper);padding:3px 8px;border-bottom:1px solid var(--border);}
+  .finish-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
+  .finish-opt:hover{background:var(--surface2);}
+  .finish-opt input{accent-color:var(--copper);cursor:pointer;}
+  .finish-fb-toggle{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:11px;color:var(--text-muted);cursor:pointer;margin-bottom:4px;}
+  .finish-fb-toggle input{accent-color:var(--copper);cursor:pointer;}
   .color-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
   .color-opt:hover{background:var(--surface2);}
   .color-opt input{accent-color:var(--copper);cursor:pointer;}
@@ -217,7 +225,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.7';
+const APP_VERSION = 'v1.8';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -666,7 +674,7 @@ const FIELDS=[
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
-  {key:'finish',label:'Finish',type:'finish'},
+  {key:'finish',label:'Finish',type:'multifinish'},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications'],necklaceOnly:true,third:true},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
@@ -729,6 +737,50 @@ function buildForm(rec, lockedKeys) {
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='multifinish') {
+      const isFB = v && (v.includes('(F)') || v.includes('(B)'));
+      const BASE_FINISHES = ['Flame','Matte','Clear','Gloss','Resin','Solder','Patina','Satin','UV Resin','Alcohol Ink','Copper','Aluminum'];
+      // Parse current value back to checkboxes
+      let frontChecked = [], backChecked = [], sameChecked = [];
+      if (v) {
+        if (isFB) {
+          v.split('&').forEach(part => {
+            const p = part.trim();
+            const name = p.replace(/\(F\)|\(B\)/g,'').trim();
+            if (p.includes('(F)')) frontChecked.push(name);
+            else if (p.includes('(B)')) backChecked.push(name);
+            else { frontChecked.push(name); backChecked.push(name); }
+          });
+        } else {
+          sameChecked = v.split('&').map(p=>p.trim()).filter(Boolean);
+        }
+      }
+      const makeCheckboxes = (id, checked) => BASE_FINISHES.map(fin =>
+        `<label class="finish-opt"><input type="checkbox" class="finish-cb" data-panel="${id}" value="${fin}" ${checked.includes(fin)?'checked':''} onchange="onFinishChange()"> ${fin}</label>`
+      ).join('');
+      if (isFB) {
+        return `<div class="fg" style="grid-column:1/-1">
+          <label>${f.label}</label>
+          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" checked onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-fb-wrap" id="finishFBWrap">
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', frontChecked)}</div>
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Back</div>${makeCheckboxes('back', backChecked)}</div>
+          </div>
+          <input type="hidden" id="f_finish" value="${v}">
+        </div>`;
+      } else {
+        return `<div class="fg" style="grid-column:1/-1">
+          <label>${f.label}</label>
+          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-panel" id="finishSamePanel">${makeCheckboxes('same', sameChecked)}</div>
+          <div class="finish-fb-wrap" id="finishFBWrap" style="display:none">
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', [])}</div>
+            <div class="finish-fb-group"><div class="finish-fb-lbl">Back</div>${makeCheckboxes('back', [])}</div>
+          </div>
+          <input type="hidden" id="f_finish" value="${v}">
+        </div>`;
+      }
     }
     if (f.type==='multicolors') {
       const selectedRaw = v ? v.split(',').map(s=>s.trim()) : [];
@@ -867,6 +919,87 @@ function selectChain(sku, label) {
   if (display) display.value = label;
   if (hidden)  hidden.value  = sku;
   closeChainList();
+  autoPopulateSKU();
+}
+
+// Base finish abbreviation map for fallback concatenation
+const BASE_FINISH_ABBR = {
+  'Flame':'FLM','Matte':'MTT','Clear':'CLR','Gloss':'GLS','Resin':'RES',
+  'Solder':'SLD','Patina':'PAT','Satin':'SAT','UV Resin':'UVR',
+  'Alcohol Ink':'ALK','Copper':'COP','Aluminum':'ALU'
+};
+
+function getFinishAbbr(fullName) {
+  // Look up in finishOptions first (exact match on full name)
+  const match = finishOptions.find(o => {
+    const name = o.split('=').slice(1).join('=').trim();
+    return name === fullName;
+  });
+  if (match) return match.split('=')[0].trim();
+  // Fallback: concatenate individual abbreviations
+  return fullName.split('&').map(p => {
+    const n = p.replace(/\(F\)|\(B\)/g,'').trim();
+    return BASE_FINISH_ABBR[n] || n;
+  }).join('');
+}
+
+function buildFinishFullName(sameArr, frontArr, backArr) {
+  if (frontArr.length || backArr.length) {
+    // Front/back mode
+    const parts = [];
+    frontArr.forEach(f => parts.push(`${f}(F)`));
+    backArr.forEach(b => parts.push(`${b}(B)`));
+    return parts.join(' & ');
+  }
+  return sameArr.join(' & ');
+}
+
+function getCheckedFinishes(panelId) {
+  return [...document.querySelectorAll(`.finish-cb[data-panel="${panelId}"]:checked`)].map(c=>c.value);
+}
+
+function onFinishFBToggle() {
+  const tog = document.getElementById('finishFBToggle');
+  const samePanel = document.getElementById('finishSamePanel');
+  const fbWrap = document.getElementById('finishFBWrap');
+  if (tog && tog.checked) {
+    if (samePanel) samePanel.style.display = 'none';
+    if (fbWrap) fbWrap.style.display = 'grid';
+  } else {
+    if (samePanel) samePanel.style.display = 'grid';
+    if (fbWrap) fbWrap.style.display = 'none';
+  }
+  onFinishChange();
+}
+
+function onFinishChange() {
+  const tog = document.getElementById('finishFBToggle');
+  const isFB = tog && tog.checked;
+  let fullName, abbr;
+  if (isFB) {
+    const front = getCheckedFinishes('front');
+    const back  = getCheckedFinishes('back');
+    fullName = buildFinishFullName([], front, back);
+  } else {
+    const same = getCheckedFinishes('same');
+    fullName = buildFinishFullName(same, [], []);
+  }
+  // Look up abbreviation
+  abbr = getFinishAbbr(fullName);
+  // Check if this is a new combo not in finishOptions
+  const isNew = fullName && !finishOptions.some(o => o.split('=').slice(1).join('=').trim() === fullName);
+  if (isNew && fullName) {
+    const newEntry = `${abbr} = ${fullName}`;
+    finishOptions.push(newEntry);
+    // Write to sheet async (fire and forget)
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({_action: 'addFinishAbbr', entry: newEntry})
+    }).catch(()=>{});
+  }
+  const hidden = document.getElementById('f_finish');
+  if (hidden) hidden.value = fullName;
   autoPopulateSKU();
 }
 
@@ -1069,8 +1202,9 @@ async function saveRecord() {
   // Auto-populate characters from newEtsySKU length
   rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
 
-  // Expand finish abbreviation to full name (e.g. FM → Flame & Matte)
-  if (rec.finish) {
+  // Finish is already stored as full name from the checkbox UI
+  // Only expand if it looks like an abbreviation (no spaces, no &)
+  if (rec.finish && !rec.finish.includes('&') && !rec.finish.includes(' ')) {
     const match = finishOptions.find(o => o.split('=')[0].trim() === rec.finish);
     if (match) rec.finish = match.split('=').slice(1).join('=').trim();
   }
