@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.14';
+const APP_VERSION = 'v1.8.17';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1161,18 +1161,25 @@ function autoPopulateSKU() {
   let pkgSKU, etsySKU;
 
   if (isSetType(typeVal) && window.__addComponentParentId) {
-    // + Component form — combine parent (PD) data with current form data
     const parent = data.find(r => r._id === window.__addComponentParentId);
-    const pdComp = parent ? {
-      type: parent.type || '',
-      shape: parent.shape || '',
-      chain: parent.chain || '',
-      finish: parent.finish || '',
-      pieceColors: parent.pieceColors || ''
-    } : null;
-    const currentComp = {type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal};
-    const components = pdComp ? [pdComp, currentComp] : [currentComp];
-    ({pkgSKU, etsySKU} = buildSKUParts(components));
+    // Component 3+: parent already has 2+ siblings — lock SKU to existing value
+    const hasNonPD = parent && (parent._siblings||[]).some(s => s !== parent && !(s.type||'').includes('-PD'));
+    if (parent && hasNonPD) {
+      pkgSKU  = parent.packagingSKU;
+      etsySKU = parent.newEtsySKU;
+    } else {
+      // Component 2: combine PD + current form data
+      const pdComp = parent ? {
+        type: parent.type || '',
+        shape: parent.shape || '',
+        chain: parent.chain || '',
+        finish: parent.finish || '',
+        pieceColors: parent.pieceColors || ''
+      } : null;
+      const currentComp = {type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal};
+      const components = pdComp ? [pdComp, currentComp] : [currentComp];
+      ({pkgSKU, etsySKU} = buildSKUParts(components));
+    }
   } else {
     ({pkgSKU, etsySKU} = buildSKUParts([{type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal}]));
   }
@@ -1234,6 +1241,16 @@ async function saveRecord() {
     rec[f.key]=el?el.value.trim():'';
   });
   if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
+
+  // Warn if adding a non-PD set component without a PD sibling already saved
+  if (editingId === null && isSetType(rec.type||'') && !(rec.type||'').includes('-PD') && window.__addComponentParentId) {
+    const parent = data.find(r => r._id === window.__addComponentParentId);
+    const hasPD = parent && (parent._siblings||[]).some(s => (s.type||'').includes('-PD'));
+    if (!hasPD) {
+      const proceed = confirm('⚠️ No Set Pendant (SET-PD) found for this SKU.\n\nThe Packaging SKU and New ETSY SKU are driven by the pendant data.\n\nDo you want to continue anyway?');
+      if (!proceed) return;
+    }
+  }
 
   // Auto-populate characters from newEtsySKU length
   rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
@@ -1315,10 +1332,12 @@ async function saveRecord() {
       closeModal(); render();
       showToast('Saved to Google Sheets');
 
-      // If this is a set component 2+, update all sibling rows with the new combined SKU
+      // If this is set component 2, update all sibling rows with the new combined SKU
+      // Component 3+ skips this — SKU is already locked from component 2
       if (isSetType(rec.type||'') && window.__addComponentParentId) {
         const parent = data.find(r => r._id === window.__addComponentParentId);
-        if (parent) {
+        const hasNonPD = parent && (parent._siblings||[]).some(s => s !== parent && !(s.type||'').includes('-PD'));
+        if (parent && !hasNonPD) {
           const oldSKU = parent.packagingSKU;
           const newPkgSKU = rec.packagingSKU;
           const newEtsySKU = rec.newEtsySKU;
