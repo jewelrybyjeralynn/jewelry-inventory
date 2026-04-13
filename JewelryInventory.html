@@ -123,11 +123,11 @@
   .ms-option:hover{background:var(--surface2);}
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
-  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);}
-  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:repeat(3,1fr);}
+  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;}
+  .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-rows:repeat(4,auto);grid-auto-flow:column;}
   .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .finish-fb-group{border:1px solid var(--border);background:var(--bg);}
-  .finish-fb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--copper);padding:3px 8px;border-bottom:1px solid var(--border);}
+  .finish-fb-group{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(6,auto);grid-auto-flow:column;}
+  .finish-fb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--copper);padding:3px 8px;border-bottom:1px solid var(--border);grid-column:1/-1;}
   .finish-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
   .finish-opt:hover{background:var(--surface2);}
   .finish-opt input{accent-color:var(--copper);cursor:pointer;}
@@ -409,7 +409,7 @@ async function loadFromSheets(isRefresh) {
         const matIdx = headers.findIndex(h => h === 'material');
         const chainMetalIdx = headers.findIndex(h => h.includes('chain metal'));
         if (typeIdx !== -1) {
-          typeOptions = abbrevRows.slice(1).map(r => (r[typeIdx]||'').trim()).filter(Boolean);
+          typeOptions = abbrevRows.slice(1).map(r => (r[typeIdx]||'').trim()).filter(Boolean).sort();
         }
         const shapeIdx = headers.findIndex(h => h === 'shape');
         if (shapeIdx !== -1) {
@@ -432,7 +432,7 @@ async function loadFromSheets(isRefresh) {
         }
         if (matIdx !== -1) {
           materialOptions = abbrevRows.slice(1)
-            .map(r => (r[matIdx]||'').trim()).filter(Boolean);
+            .map(r => (r[matIdx]||'').trim()).filter(Boolean).sort();
         }
         if (chainMetalIdx !== -1) {
           abbrevRows.slice(1).forEach(r => {
