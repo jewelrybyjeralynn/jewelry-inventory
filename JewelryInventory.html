@@ -211,7 +211,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.4';
+const APP_VERSION = 'v1.5';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -822,7 +822,7 @@ function buildForm(rec, lockedKeys) {
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
 }
 
-function openAddModal() { editingId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
+function openAddModal() { editingId=null; window.__addComponentParentId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
 
 // SKU auto-population helpers
 function toCamelCase(str) {
@@ -892,6 +892,45 @@ function onTypeChange() {
   autoPopulateSKU();
 }
 
+const SET_TYPE_PARENTS = ['SET','SET2','SETB','SET2B'];
+
+function isSetType(typeParent) {
+  return SET_TYPE_PARENTS.includes(typeParent);
+}
+
+function buildSKUParts(components) {
+  // components = array of {type, shape, chain, finish, pieceColors}
+  // PD drives chain/finish/colors; all shapes concatenated PD first
+  const pd = components.find(c => (c.type||'').includes('-PD')) || components[0];
+  const typeParent = getTypeParentAbbr(pd.type || '');
+
+  // Shapes — PD first, then others, deduplicate
+  const shapes = [];
+  const pdShape = shapeAbbrevMap[(pd.shape||'').toLowerCase().trim()] || toCamelCase(pd.shape||'');
+  if (pdShape) shapes.push(pdShape);
+  components.filter(c => c !== pd).forEach(c => {
+    const s = shapeAbbrevMap[(c.shape||'').toLowerCase().trim()] || toCamelCase(c.shape||'');
+    if (s && s !== pdShape) shapes.push(s);
+  });
+  const shapeStr = shapes.join('');
+
+  const metal = getChainMetal(pd.chain||'');
+  const finReadable = finishReadable(pd.finish||'');
+  const finShort = finishAbbr(pd.finish||'');
+  const colorAbbrs = (pd.pieceColors||'').split(',').map(c=>c.trim()).filter(Boolean).join('');
+
+  const pkgBase  = [typeParent, shapeStr, metal, finReadable].filter(Boolean).join('-');
+  const etsyBase = [typeParent, shapeStr, metal, finShort].filter(Boolean).join('-');
+
+  const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
+  const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
+
+  return {
+    pkgSKU:  pkgFull.length  <= 38 ? pkgFull  : pkgBase.slice(0, 38),
+    etsySKU: etsyFull.length <= 32 ? etsyFull : etsyBase.slice(0, 32)
+  };
+}
+
 function autoPopulateSKU() {
   const typeVal   = (document.getElementById('f_type')||{}).value || '';
   const shapeVal  = (document.getElementById('f_shape')||{}).value || '';
@@ -900,27 +939,24 @@ function autoPopulateSKU() {
   const colorsVal = (document.getElementById('f_pieceColors')||{}).value || '';
 
   const typeParent = getTypeParentAbbr(typeVal);
-  const shapeLower = shapeVal.toLowerCase().trim();
-  const shape = shapeAbbrevMap[shapeLower] || toCamelCase(shapeVal);
-  const metal = getChainMetal(chainVal);
+  let pkgSKU, etsySKU;
 
-  // Finish
-  const finReadable = finishReadable(finishVal);
-  const finShort = finishAbbr(finishVal);
-
-  // Colors — abbreviations joined
-  const colorAbbrs = colorsVal.split(',').map(c => c.trim()).filter(Boolean).join('');
-
-  // Build base (without colors)
-  const pkgBase   = [typeParent, shape, metal, finReadable].filter(Boolean).join('-');
-  const etsyBase  = [typeParent, shape, metal, finShort].filter(Boolean).join('-');
-
-  // Add colors if they fit
-  const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
-  const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
-
-  const pkgSKU  = pkgFull.length  <= 38 ? pkgFull  : pkgBase.slice(0, 38);
-  const etsySKU = etsyFull.length <= 32 ? etsyFull : etsyBase.slice(0, 32);
+  if (isSetType(typeParent) && window.__addComponentParentId) {
+    // + Component form — combine parent (PD) data with current form data
+    const parent = data.find(r => r._id === window.__addComponentParentId);
+    const pdComp = parent ? {
+      type: parent.type || '',
+      shape: parent.shape || '',
+      chain: parent.chain || '',
+      finish: parent.finish || '',
+      pieceColors: parent.pieceColors || ''
+    } : null;
+    const currentComp = {type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal};
+    const components = pdComp ? [pdComp, currentComp] : [currentComp];
+    ({pkgSKU, etsySKU} = buildSKUParts(components));
+  } else {
+    ({pkgSKU, etsySKU} = buildSKUParts([{type: typeVal, shape: shapeVal, chain: chainVal, finish: finishVal, pieceColors: colorsVal}]));
+  }
 
   const pkgEl  = document.getElementById('f_packagingSKU');
   const etsyEl = document.getElementById('f_newEtsySKU');
@@ -934,11 +970,10 @@ function autoPopulateSKU() {
     pkgCounter.textContent = `${plen}/38`;
     pkgCounter.style.color = plen>38?'#e07070':plen>34?'#c8a840':'var(--text-muted)';
   }
-
-  // Update counter
+  // Update etsy counter
   const counter = document.getElementById('skuCounter');
-  if (counter) {
-    const len = (etsyEl ? etsyEl.value : '').length;
+  if (counter && etsyEl) {
+    const len = etsyEl.value.length;
     counter.textContent = `${len}/32`;
     counter.style.color = len>32?'#e07070':len>28?'#c8a840':'var(--text-muted)';
   }
@@ -963,15 +998,15 @@ function openEditModal(id) {
 
 function openAddComponent(parentId) {
   editingId = null;
+  window.__addComponentParentId = parentId;
   const parent = data.find(r=>r._id===parentId);
-  // Pre-fill from parent, blank out component-specific fields
   const prefill = Object.assign({}, parent);
   COMPONENT_BLANK.forEach(k => prefill[k] = '');
   document.getElementById('modalTitle').textContent = 'Add Component to ' + parent.packagingSKU;
   buildForm(prefill, COMPONENT_LOCKED);
   document.getElementById('modalOv').classList.add('open');
 }
-function closeModal() { document.getElementById('modalOv').classList.remove('open'); }
+function closeModal() { document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; }
 
 async function saveRecord() {
   const rec={};
@@ -1059,6 +1094,36 @@ async function saveRecord() {
       try { localStorage.setItem('jewelry_added',JSON.stringify(addedRecords)); } catch(e){}
       closeModal(); render();
       showToast('Saved to Google Sheets');
+
+      // If this is a set component 2+, update all sibling rows with the new combined SKU
+      const savedTypeParent = getTypeParentAbbr(rec.type||'');
+      if (isSetType(savedTypeParent) && window.__addComponentParentId) {
+        const parent = data.find(r => r._id === window.__addComponentParentId);
+        if (parent) {
+          const oldSKU = parent.packagingSKU;
+          const newPkgSKU = rec.packagingSKU;
+          const newEtsySKU = rec.newEtsySKU;
+          if (oldSKU !== newPkgSKU) {
+            // Update parent in memory
+            parent.packagingSKU = newPkgSKU;
+            parent.newEtsySKU = newEtsySKU;
+            // Send updateSKU to sheet — updates all rows with old Packaging SKU
+            try {
+              await fetch(API_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'text/plain'},
+                body: JSON.stringify({
+                  _action: 'updateSKU',
+                  _oldPackagingSKU: oldSKU,
+                  packagingSKU: newPkgSKU,
+                  newEtsySKU: newEtsySKU
+                })
+              });
+            } catch(e) {}
+          }
+        }
+      }
+
       // Auto-open + Component form for the SKU just saved
       setTimeout(() => openAddComponent(rec._id), 300);
     } catch(err) {
