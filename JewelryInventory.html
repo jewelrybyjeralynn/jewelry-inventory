@@ -226,7 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.10';
+const APP_VERSION = 'v1.8.12';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -675,7 +675,7 @@ const FIELDS=[
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details'},
-  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],third:true},
+  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
   {key:'finish',label:'Finish',type:'multifinish'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
@@ -1126,7 +1126,7 @@ function autoPopulateSKU() {
   const typeParent = deriveTypeParent(typeVal);
   let pkgSKU, etsySKU;
 
-  if (isSetType(typeParent) && window.__addComponentParentId) {
+  if (isSetType(typeVal) && window.__addComponentParentId) {
     // + Component form — combine parent (PD) data with current form data
     const parent = data.find(r => r._id === window.__addComponentParentId);
     const pdComp = parent ? {
@@ -1282,8 +1282,7 @@ async function saveRecord() {
       showToast('Saved to Google Sheets');
 
       // If this is a set component 2+, update all sibling rows with the new combined SKU
-      const savedTypeParent = deriveTypeParent(rec.type||'');
-      if (isSetType(savedTypeParent) && window.__addComponentParentId) {
+      if (isSetType(rec.type||'') && window.__addComponentParentId) {
         const parent = data.find(r => r._id === window.__addComponentParentId);
         if (parent) {
           const oldSKU = parent.packagingSKU;
