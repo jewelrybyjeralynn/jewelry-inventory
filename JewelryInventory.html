@@ -179,23 +179,25 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .combo-opt{padding:6px 9px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;color:var(--text);}
   .combo-opt:hover,.combo-opt.active{background:var(--surface2);color:var(--copper);}
   .combo-empty{padding:6px 9px;font-size:11px;color:var(--text-muted);font-style:italic;}
-  .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:12px;}
   .modal-ov.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;}
-  .modal-hdr{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:10;}
-  .modal-ttl{font-family:'Libre Baskerville',serif;color:var(--copper);font-size:15px;}
+  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:700px;max-height:96vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .modal-hdr{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:10;}
+  .modal-ttl{font-family:'Libre Baskerville',serif;color:var(--copper);font-size:14px;}
   .modal-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1;}
   .modal-x:hover{color:var(--text);}
-  .modal-body{padding:17px;flex:1;}
-  .fform{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
-  .fg{display:flex;flex-direction:column;gap:4px;}
+  .modal-body{padding:11px 14px;flex:1;}
+  .fform{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .fg{display:flex;flex-direction:column;gap:3px;}
   .fg.full{grid-column:1/-1;}
   label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
-  input[type=text],textarea,select.fs{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:12px;outline:none;width:100%;}
+  input[type=text],textarea,select.fs{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;outline:none;width:100%;}
   input[type=text]:focus,textarea:focus,select.fs:focus{border-color:var(--copper);}
   input[type=text]::placeholder,textarea::placeholder{color:var(--text-muted);}
-  textarea{resize:vertical;min-height:52px;}
-  .modal-ftr{padding:11px 17px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:var(--surface);}
+  textarea{resize:vertical;min-height:44px;}
+  /* Option D: SKU fields sticky at bottom of modal */
+  .modal-sku-bar{padding:8px 14px;border-top:1px solid var(--border);background:var(--surface);display:grid;grid-template-columns:1fr 1fr;gap:8px;position:sticky;bottom:48px;z-index:9;}
+  .modal-ftr{padding:8px 14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:var(--surface);z-index:10;}
 
   .last-updated{color:var(--text-muted);font-size:10px;white-space:nowrap;}
 
@@ -218,7 +220,8 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .finish-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
   .finish-opt:hover{background:var(--surface2);}
   .finish-opt input{accent-color:var(--copper);cursor:pointer;}
-  .finish-fb-toggle{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:11px;color:var(--text-muted);cursor:pointer;margin-bottom:4px;}
+  .finish-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .finish-fb-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-muted);cursor:pointer;}
   .finish-fb-toggle input{accent-color:var(--copper);cursor:pointer;}
   .color-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
   .color-opt:hover{background:var(--surface2);}
@@ -356,13 +359,14 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   <div class="modal">
     <div class="modal-hdr"><div class="modal-ttl" id="modalTitle">Add New SKU</div><button class="modal-x" onclick="closeModal()">×</button></div>
     <div class="modal-body"><div class="fform" id="formGrid"></div></div>
+    <div class="modal-sku-bar" id="skuBar"></div>
     <div class="modal-ftr"><button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveRecord()">Save</button></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.33';
+const APP_VERSION = 'v1.8.36';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -832,7 +836,26 @@ const COMPONENT_BLANK = ['type','shape','objectDescription','wideHeight','materi
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
+  // Render SKU bar separately (sticky)
+  const skuBar = document.getElementById('skuBar');
+  if (skuBar) {
+    const pkgV = rec ? (rec.packagingSKU || '') : '';
+    const etsyV = rec ? (rec.newEtsySKU || '') : '';
+    const pkgLocked = lockedKeys && lockedKeys.includes('packagingSKU');
+    const etsyLocked = lockedKeys && lockedKeys.includes('newEtsySKU');
+    const pkgLen = pkgV.length;
+    const etsyLen = etsyV.length;
+    const pkgColor = pkgLen>38?'#e07070':pkgLen>34?'#c8a840':'var(--text-muted)';
+    const etsyColor = etsyLen>32?'#e07070':etsyLen>28?'#c8a840':'var(--text-muted)';
+    skuBar.innerHTML = `
+      <div class="fg"><label style="display:flex;justify-content:space-between"><span>Packaging SKU *</span><span id="pkgCounter" style="color:${pkgColor};font-weight:500">${pkgLen}/38</span></label>
+        <input type="text" id="f_packagingSKU" value="${pkgV.replace(/"/g,'&quot;')}" placeholder="Packaging SKU" oninput="this.dataset.manualEdit='1'" ${pkgLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>
+      <div class="fg"><label style="display:flex;justify-content:space-between"><span>New ETSY SKU</span><span id="skuCounter" style="color:${etsyColor};font-weight:500">${etsyLen}/32</span></label>
+        <input type="text" id="f_newEtsySKU" value="${etsyV.replace(/"/g,'&quot;')}" placeholder="New Etsy SKU" maxlength="40" oninput="this.dataset.manualEdit='1'" ${etsyLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
+  }
+
   document.getElementById('formGrid').innerHTML=FIELDS.map(f=>{
+    if (f.key==='packagingSKU' || f.key==='newEtsySKU') return ''; // rendered in skuBar
     const defaultVal = f.default || '';
     const v = rec ? (rec[f.key] || defaultVal) : defaultVal;
     const isLocked = lockedKeys && lockedKeys.includes(f.key);
@@ -906,8 +929,7 @@ function buildForm(rec, lockedKeys) {
       ).join('');
       if (isFB) {
         return `<div class="fg" style="grid-column:1/-1">
-          <label>${f.label}</label>
-          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" checked onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-header"><label>${f.label}</label><label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" checked onchange="onFinishFBToggle()"> Different Front/Back</label></div>
           <div class="finish-fb-wrap" id="finishFBWrap">
             <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', frontChecked)}</div>
             <div class="finish-fb-group"><div class="finish-fb-lbl">Back</div>${makeCheckboxes('back', backChecked)}</div>
@@ -916,8 +938,7 @@ function buildForm(rec, lockedKeys) {
         </div>`;
       } else {
         return `<div class="fg" style="grid-column:1/-1">
-          <label>${f.label}</label>
-          <label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" onchange="onFinishFBToggle()"> Different Front/Back</label>
+          <div class="finish-header"><label>${f.label}</label><label class="finish-fb-toggle"><input type="checkbox" id="finishFBToggle" onchange="onFinishFBToggle()"> Different Front/Back</label></div>
           <div class="finish-panel" id="finishSamePanel">${makeCheckboxes('same', sameChecked)}</div>
           <div class="finish-fb-wrap" id="finishFBWrap" style="display:none">
             <div class="finish-fb-group"><div class="finish-fb-lbl">Front</div>${makeCheckboxes('front', [])}</div>
@@ -951,7 +972,7 @@ function buildForm(rec, lockedKeys) {
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='chain') {
-      const currentType = (document.getElementById('f_type')||{}).value || '';
+      const currentType = (document.getElementById('f_type')||{}).value || (rec && rec.type) || '';
       const chainDisabled = ['JD','PKG'].includes(currentType.toUpperCase()) || isLocked;
       const displayVal = v ? (() => {
         const o = chainOptions.find(o => o.sku === v);
@@ -975,7 +996,7 @@ function buildForm(rec, lockedKeys) {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
       if (f.necklaceOnly) {
         const necklaceTypes = ['NK','SET-PD'];
-        const currentType = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
+        const currentType = (document.getElementById('f_type') ? document.getElementById('f_type').value : '') || (rec && rec.type) || '';
         const disabled = !necklaceTypes.includes(currentType);
         return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${disabled?'disabled':''} ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v || o===v+'"' || o===v.replace('"','') ?'selected':''}>${o}</option>`).join('')}</select></div>`;
       }
