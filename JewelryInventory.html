@@ -68,6 +68,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.48  Double-click component in SKU group opens edit modal
 v1.8.47  Extension Chain moved before Chain/Bead/Clasp Details in detail view
 v1.8.44  Debug logging for update payload
 v1.8.43  Row_ID added to COL_MAP, sent with update requests
@@ -383,7 +384,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.47';
+const APP_VERSION = 'v1.8.48';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -828,7 +829,7 @@ function showDetail(r, sibIdx) {
       ${sibs.map((s,si)=>{
         const chainInfo = [s.chain, s.chainOrDropLength ? s.chainOrDropLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
         const isCurrent = s === displayRec;
-        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[0],${si})" style="cursor:pointer">
+        return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[0],${si})" ondblclick="openEditModal(window.__sibs[${si}]._id)" style="cursor:pointer">
           <span class="sib-desc">${s.objectDescription||'—'}</span>
           ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
         </div>`;
