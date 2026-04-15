@@ -1,4 +1,91 @@
 <!DOCTYPE html>
+<!--
+================================================================================
+JEWELRY INVENTORY APP
+================================================================================
+REPO:       https://github.com/jewelrybyjeralynn/jewelry-inventory
+LIVE URL:   https://jewelrybyjeralynn.github.io/jewelry-inventory/JewelryInventory.html
+VERSION:    See APP_VERSION constant in <script> section
+OWNER:      Jeralynn (managed by Chris)
+--------------------------------------------------------------------------------
+ARCHITECTURE
+--------------------------------------------------------------------------------
+- Single HTML/JS/CSS file, no server, no build step
+- Data source: Google Sheets published CSVs (auto-publishes on save)
+- Writes: Google Apps Script Web App (no-cors POST)
+- Left pane: SKU list grouped by Packaging SKU (siblings share a group)
+- Right pane: Detail view (click item to show)
+- Modal: Add New SKU / Add Component / Edit SKU
+--------------------------------------------------------------------------------
+GOOGLE SHEETS
+--------------------------------------------------------------------------------
+Spreadsheet published base URL:
+  https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub
+
+Tabs:
+  Listings_Published        gid=1428673260  (main inventory, read+write)
+  Findings_SKUs_Published   gid=1709919881  (chain/hardware options, read only)
+  Abbreviations_Published   gid=1879145246  (type/shape/finish/color/material abbrevs, read+write)
+
+Listings_Published columns (0-indexed):
+  0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Characters
+  5:Object Description  6:Wide x Height  7:Material  8:Chain Or Hardware
+  9:Chain Or Drop Length  10:Chain/Bead/Clasp Details  11:Extension Chain
+  12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
+  17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
+  22:ETSY_Status  23:ETSY_URL  24:Features & Details  25:Added_Timestamp
+
+Apps Script URL:
+  https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec
+
+Apps Script actions:
+  append        - Add new row to Listings_Published
+  update        - Update row matched by Packaging SKU + Object Description
+  updateSKU     - Update Packaging SKU + New ETSY SKU on ALL rows matching old PKG SKU
+  addFinishAbbr - Append new finish abbreviation entry to Abbreviations_Published
+--------------------------------------------------------------------------------
+KEY BEHAVIORS
+--------------------------------------------------------------------------------
+- SET types (SET-PD, SET-ER, SET-BR) group as siblings under same Packaging SKU
+- SKU auto-generates: TypeParent-Shape-ChainMetal-Finish[-Colors]
+- SET SKU combines PD+ER shapes after first non-PD component saved; locks after that
+- Chain Or Hardware filtered by Type:
+    ER/SET-ER  → EAR options only
+    KC         → Keychain options only
+    BR/SET-BR  → includes BRACELET options; others exclude BRACELET
+    JD/PKG     → disabled
+    All others → excludes EAR and Keychain
+- Finish: checkboxes (12 base finishes, alphabetical, 4 columns)
+  "Different Front/Back" toggle splits into Front/Back groups (2 cols each)
+  New combos auto-written to Abbreviations_Published via addFinishAbbr
+- Colors: checkboxes showing full names, abbreviations used in SKU
+- Type dropdown order matches Abbreviations_Published Type column order
+- Extension Chain and Chain Length Config only enabled for NK and SET-PD
+--------------------------------------------------------------------------------
+VERSION LOG (recent)
+--------------------------------------------------------------------------------
+v1.8.31  Chain Length Config — added None option
+v1.8.30  Type filter shows plain names (Set, Necklace, Earrings...)
+v1.8.29  Replaced Finish filter with Type filter in header
+v1.8.28  Detail view refreshes to edited record after save
+v1.8.27  Extension Chain pre-populates in Edit (matches with/without ")
+v1.8.26  Left panel shows Type · Shape · Chain per component
+v1.8.25  BRACELET chain options only for BR/SET-BR
+v1.8.24  Fixed hasNonPD captured before sibling add (SET SKU update bug)
+v1.8.23  Fixed sibling grouping to use parentId in component mode
+v1.8.22  Added console logging for updateSKU debugging
+v1.8.21  Fixed no-cors missing on append fetch (was causing spin)
+v1.8.20  Fixed syntax error from missing brace
+v1.8.19  Added updateSKU result feedback toast
+v1.8.18  Warning fires on type change when no SET-PD exists
+v1.8.17  Warning/block at save time if no SET-PD sibling
+v1.8.16  SKU locks after first non-PD component (handles SET-PD+ER+ER)
+v1.8.15  Component 3+ inherits existing SKU, no recalculation
+v1.8.14  Keychain options excluded from all non-KC types
+v1.8.13  Chain Or Hardware filtered/disabled by Type
+v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
+================================================================================
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -141,6 +228,49 @@
   .toast.show{transform:translateY(0);opacity:1;}
   ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}
   ::-webkit-scrollbar-thumb{background:var(--border);}::-webkit-scrollbar-thumb:hover{background:var(--copper-dim);}
+
+  /* MOBILE */
+  .mob-back{display:none;}
+  .mob-filter-btn{display:none;}
+  .mob-filter-drawer{display:none;}
+
+  @media(max-width:700px){
+    header{flex-wrap:wrap;gap:8px;padding:9px 12px;}
+    .logo{font-size:13px;flex:1;}
+    .search-wrap{order:3;width:100%;flex:none;}
+    .filters{display:none;}
+    .mob-filter-btn{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;}
+    .mob-filter-btn.active-filter{border-color:var(--copper);color:var(--copper);}
+    .mob-add-btn{background:var(--copper);color:var(--bg);border:none;padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;}
+
+    /* Filter drawer */
+    .mob-filter-drawer{display:none;flex-direction:column;gap:0;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;gap:8px;}
+    .mob-filter-drawer.open{display:flex;}
+    .mob-filter-drawer .ms-wrap{position:static;}
+    .mob-filter-drawer .ms-panel{position:static;display:flex;margin-top:0;border:none;background:transparent;padding-left:8px;}
+    .mob-filter-drawer .ms-panel.open{display:flex;}
+    .mob-filter-drawer .ms-btn{min-width:0;width:100%;}
+    .mob-filter-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .mob-filter-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:4px;border-top:1px solid var(--border);}
+
+    /* Single pane navigation */
+    .main{position:relative;}
+    .list-pane{width:100%;border-right:none;}
+    .detail-pane{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;}
+    .detail-pane.mob-visible{display:flex;}
+
+    /* Back button */
+    .mob-back{display:flex;align-items:center;gap:7px;background:none;border:none;border-bottom:1px solid var(--border);color:var(--copper);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;padding:9px 13px;flex-shrink:0;width:100%;text-align:left;}
+    .mob-back:hover{background:var(--surface);}
+
+    /* Modal full screen */
+    .modal-ov{padding:0;align-items:flex-start;}
+    .modal{max-width:100%;max-height:100vh;height:100vh;border:none;}
+    .fform{grid-template-columns:1fr 1fr;}
+    .finish-panel{grid-template-rows:repeat(4,auto);}
+    .finish-fb-group{grid-template-columns:1fr;grid-template-rows:auto repeat(12,auto);}
+    .color-panel{grid-template-rows:repeat(9,auto);}
+  }
 </style>
 </head>
 <body>
@@ -164,6 +294,9 @@
       <span class="si">⌕</span>
       <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
     </div>
+    <!-- Mobile-only buttons -->
+    <button class="mob-filter-btn" id="mobFilterBtn" onclick="toggleMobFilters()">⚙ Filters</button>
+    <button class="mob-add-btn" onclick="openAddModal()">+ Add SKU</button>
     <div class="filters">
       <div class="ms-wrap">
         <div class="filter-lbl">Added To Etsy</div>
@@ -229,7 +362,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.31';
+const APP_VERSION = 'v1.8.32';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
