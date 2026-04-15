@@ -34,8 +34,10 @@ Listings_Published columns (0-indexed):
   12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
   17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
   22:ETSY ListingID  23:ETSY SKU  24:ETSY Title  25:ETSY Status  26:ETSY Price
-  27:ETSY URL  28:Update Templates  29:Template 1  30:Template 2  31:Template 3
-  32:Template 4  33:Template: Tags  34:Added_Timestamp  35:API_Edit
+  27:ETSY URL  28:Update Templates  29:Template - Title Custom Intro
+  30:Template - Components Necklace Length Options
+  31:Template - Why You will Love it  32:Template - Tags
+  33:Added_Timestamp  34:Row_ID  35:API_Edit
 
 Apps Script URL:
   https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec
@@ -66,6 +68,18 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.44  Debug logging for update payload
+v1.8.43  Row_ID added to COL_MAP, sent with update requests
+v1.8.42  update fetch uses no-cors, COL_MAP template names fixed
+v1.8.41  COL_MAP updated for new 36-column structure incl Row_ID, API_Edit
+v1.8.40  Characters removed from detail view
+v1.8.39  Fixed stale DOM type — rec.type now takes priority over DOM
+v1.8.37  SKU auto-population skipped when editing existing record
+v1.8.36  Tighter modal spacing, SKU fields sticky at bottom
+v1.8.35  Finish label and Different Front/Back toggle on same line
+v1.8.34  Chain Length Config/Extension Chain enabled correctly on Edit open
+v1.8.33  All siblings updated in memory after SET SKU update
+v1.8.32  Added HTML comment block + PROJECT_jewelryinventoryapi.md
 v1.8.31  Chain Length Config — added None option
 v1.8.30  Type filter shows plain names (Set, Necklace, Earrings...)
 v1.8.29  Replaced Finish filter with Type filter in header
@@ -368,7 +382,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.44';
+const APP_VERSION = 'v1.8.45';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
