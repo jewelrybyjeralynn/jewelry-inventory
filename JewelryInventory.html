@@ -368,7 +368,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.41';
+const APP_VERSION = 'v1.8.42';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -409,11 +409,10 @@ const COL_MAP = {
   'ETSY Title':'etsyTitle',
   'ETSY Price':'etsyPrice',
   'Update Templates':'updateTemplates',
-  'Template 1: Title & Custom Intro':'template1',
-  'Template 2: Features & Details':'template2',
-  'Template 3: Necklace Length Options':'template3',
-  "Template 4: Why You'll Love it":'template4',
-  'Template: Tags':'templateTags',
+  'Template - Title Custom Intro': 'templateTitle',
+  'Template - Components Necklace Length Options': 'templateComponents',
+  'Template 4 - Why You will Love it': 'templateWhyLove',
+  'Template - Tags': 'templateTags',
   'Added_Timestamp':'addedTimestamp',
   'API_Edit':'apiEdit',
   'Published_Update_Timestamp':'publishedTimestamp'
@@ -1493,38 +1492,22 @@ async function saveRecord() {
     try {
       const resp = await fetch(API_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(rec)
       });
-      const result = await resp.json();
-      if (result.status === 'error') {
-        showToast('Update failed: ' + result.message);
-      } else {
-        closeModal(); render();
-        // Find and show the specific record that was edited
-        let editedRec = data.find(r => r._id === editingId);
-        if (!editedRec) {
-          for (const r of data) {
-            if (r._siblings) { const s = r._siblings.find(s=>s._id===editingId); if(s){editedRec=s;break;} }
-          }
-        }
-        if (editedRec) showDetail(editedRec);
-        else if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
-        showToast('SKU updated in Google Sheets');
-      }
-    } catch(err) {
-      // If CORS fails fall back to no-cors
-      await fetch(API_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(rec)});
       closeModal(); render();
-      let editedRec2 = data.find(r => r._id === editingId);
-      if (!editedRec2) {
+      let editedRec = data.find(r => r._id === editingId);
+      if (!editedRec) {
         for (const r of data) {
-          if (r._siblings) { const s = r._siblings.find(s=>s._id===editingId); if(s){editedRec2=s;break;} }
+          if (r._siblings) { const s = r._siblings.find(s=>s._id===editingId); if(s){editedRec=s;break;} }
         }
       }
-      if (editedRec2) showDetail(editedRec2);
+      if (editedRec) showDetail(editedRec);
       else if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
-      showToast('SKU updated');
+      showToast('SKU updated in Google Sheets');
+    } catch(err) {
+      showToast('Save failed: ' + err.message);
     }
   } else {
     // Post to Google Sheet
