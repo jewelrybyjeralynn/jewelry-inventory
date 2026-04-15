@@ -368,7 +368,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.42';
+const APP_VERSION = 'v1.8.43';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -411,9 +411,10 @@ const COL_MAP = {
   'Update Templates':'updateTemplates',
   'Template - Title Custom Intro': 'templateTitle',
   'Template - Components Necklace Length Options': 'templateComponents',
-  'Template 4 - Why You will Love it': 'templateWhyLove',
+  'Template - Why You will Love it': 'templateWhyLove',
   'Template - Tags': 'templateTags',
   'Added_Timestamp':'addedTimestamp',
+  'Row_ID':'rowId',
   'API_Edit':'apiEdit',
   'Published_Update_Timestamp':'publishedTimestamp'
 };
@@ -1488,6 +1489,7 @@ async function saveRecord() {
     const original = targetRec ? {...targetRec} : {};
     if (targetRec) Object.assign(targetRec, rec);
     rec._action = 'update';
+    rec._rowId = original.rowId || '';
     rec._originalDescription = original.objectDescription || rec.objectDescription;
     try {
       const resp = await fetch(API_URL, {
