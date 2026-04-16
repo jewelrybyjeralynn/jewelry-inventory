@@ -88,6 +88,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.64  Finish parts sorted by abbreviation table order (Patina & Matte not Matte & Patina)
 v1.8.63  Add Zinc Alloy to no-finish material list
 v1.8.62  Aluminum/SS/Bead material disables finish panel, stores No Finish
 v1.8.61  Updated HTML comments + PROJECT_jewelryinventoryapi.md
@@ -426,7 +427,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.63';
+const APP_VERSION = 'v1.8.64';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1378,14 +1379,26 @@ function getFinishAbbr(fullName) {
 }
 
 function buildFinishFullName(sameArr, frontArr, backArr) {
+  // Sort finish parts by order they appear in finishOptions (abbrev table order)
+  // so Patina & Matte is always canonical regardless of checkbox selection order
+  const finishOrder = finishOptions.map(o => o.split('=').slice(1).join('=').trim());
+  const sortByTable = arr => [...arr].sort((a, b) => {
+    const ai = finishOrder.indexOf(a);
+    const bi = finishOrder.indexOf(b);
+    // Known finishes sort by table order; unknown fall to end
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
   if (frontArr.length || backArr.length) {
-    // Front/back mode
+    // Front/back mode — sort each group independently
     const parts = [];
-    frontArr.forEach(f => parts.push(`${f}(Front)`));
-    backArr.forEach(b => parts.push(`${b}(Back)`));
+    sortByTable(frontArr).forEach(f => parts.push(`${f}(Front)`));
+    sortByTable(backArr).forEach(b => parts.push(`${b}(Back)`));
     return parts.join(' & ');
   }
-  return sameArr.join(' & ');
+  return sortByTable(sameArr).join(' & ');
 }
 
 function getCheckedFinishes(panelId) {
