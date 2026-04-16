@@ -88,6 +88,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.63  Add Zinc Alloy to no-finish material list
 v1.8.62  Aluminum/SS/Bead material disables finish panel, stores No Finish
 v1.8.61  Updated HTML comments + PROJECT_jewelryinventoryapi.md
 v1.8.60  Stainless Steel material auto-sets finish, disables finish panel
@@ -425,7 +426,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.62';
+const APP_VERSION = 'v1.8.63';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1139,7 +1140,7 @@ function buildForm(rec, lockedKeys) {
 
 function onMaterialChange() {
   const mat = (document.getElementById('f_material')||{}).value || '';
-  const isAluminum = mat === 'Aluminum' || mat === 'Stainless Steel' || mat === 'Bead';
+  const isAluminum = mat === 'Aluminum' || mat === 'Stainless Steel' || mat === 'Bead' || mat === 'Zinc Alloy';
   // Disable/enable all finish checkboxes
   document.querySelectorAll('.finish-cb').forEach(cb => {
     cb.disabled = isAluminum;
@@ -1687,7 +1688,7 @@ async function saveRecord() {
   }
 
   // If material is Aluminum, finish is always Aluminum regardless of checkboxes
-  if (['Aluminum', 'Stainless Steel', 'Bead'].includes(rec.material)) rec.finish = 'No Finish';
+  if (['Aluminum', 'Stainless Steel', 'Bead', 'Zinc Alloy'].includes(rec.material)) rec.finish = 'No Finish';
 
   // Auto-populate characters from newEtsySKU length
   rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
