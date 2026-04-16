@@ -68,6 +68,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.50  Colors: checkbox grid replaced with tag-input autocomplete widget
 v1.8.49  Search strips hyphens+spaces for fuzzy matching (setpenguin finds SET-Penguin)
 v1.8.48  Double-click component in SKU group opens edit modal
 v1.8.47  Extension Chain moved before Chain/Bead/Clasp Details in detail view
@@ -231,7 +232,17 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .ms-option:hover{background:var(--surface2);}
   .ms-option input[type=checkbox]{accent-color:var(--copper);width:12px;height:12px;cursor:pointer;}
   .ms-clear{padding:5px 10px;font-size:10px;color:var(--text-muted);cursor:pointer;border-top:1px solid var(--border);text-align:center;}
-  .color-panel{border:1px solid var(--border);background:var(--bg);max-height:220px;overflow-y:auto;display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;}
+  .tag-input-wrap{position:relative;width:100%;}
+  .tag-input-box{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:34px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);cursor:text;}
+  .tag-input-box:focus-within{border-color:var(--copper);}
+  .color-tag{display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);color:var(--copper-light);font-size:11px;padding:2px 7px;white-space:nowrap;}
+  .color-tag-x{cursor:pointer;color:var(--text-muted);font-size:13px;line-height:1;padding:0 1px;}
+  .color-tag-x:hover{color:var(--copper-light);}
+  .tag-text-input{flex:1;min-width:80px;background:transparent;border:none;outline:none;color:var(--text);font-family:"DM Mono",monospace;font-size:12px;padding:2px 0;}
+  .tag-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--copper);z-index:300;max-height:180px;overflow-y:auto;display:none;}
+  .tag-dropdown.open{display:block;}
+  .tag-drop-item{padding:6px 10px;font-size:12px;cursor:pointer;color:var(--text);}
+  .tag-drop-item:hover,.tag-drop-item.active{background:var(--surface2);color:var(--copper-light);}
   .finish-panel{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-rows:repeat(3,auto);grid-auto-flow:column;}
   .finish-fb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .finish-fb-group{border:1px solid var(--border);background:var(--bg);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto repeat(6,auto);grid-auto-flow:column;}
@@ -242,9 +253,6 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .finish-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
   .finish-fb-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-muted);cursor:pointer;}
   .finish-fb-toggle input{accent-color:var(--copper);cursor:pointer;}
-  .color-opt{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;cursor:pointer;}
-  .color-opt:hover{background:var(--surface2);}
-  .color-opt input{accent-color:var(--copper);cursor:pointer;}
 
   .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
   .toast.show{transform:translateY(0);opacity:1;}
@@ -291,7 +299,6 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     .fform{grid-template-columns:1fr 1fr;}
     .finish-panel{grid-template-rows:repeat(4,auto);}
     .finish-fb-group{grid-template-columns:1fr;grid-template-rows:auto repeat(12,auto);}
-    .color-panel{grid-template-rows:repeat(9,auto);}
   }
 </style>
 </head>
@@ -385,7 +392,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.49';
+const APP_VERSION = 'v1.8.50';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -981,18 +988,34 @@ function buildForm(rec, lockedKeys) {
       }
     }
     if (f.type==='multicolors') {
-      const selectedRaw = v ? v.split(',').map(s=>s.trim()) : [];
-      const checkboxes = pieceColorOptions.map(o => {
-        const abbr = o.split('=')[0].trim();
-        const fullName = o.split('=').slice(1).join('=').trim();
-        // Match on abbreviation OR full name (handles both old and new stored values)
-        const checked = selectedRaw.includes(abbr) || selectedRaw.includes(fullName) ? 'checked' : '';
-        return `<label class="color-opt"><input type="checkbox" class="color-cb" value="${abbr}" ${checked}> ${fullName}</label>`;
-      }).join('');
-      return `<div class="fg ${f.full?'full':''}" style="grid-column:1/-1">
+      // Build initial tags from stored full names (comma-separated)
+      const selectedRaw = v ? v.split(',').map(s=>s.trim()).filter(Boolean) : [];
+      // Resolve each stored value to {abbr, fullName} -- stored as full names
+      const initTags = selectedRaw.map(stored => {
+        const match = pieceColorOptions.find(o => {
+          const abbr = o.split('=')[0].trim();
+          const full = o.split('=').slice(1).join('=').trim();
+          return abbr === stored || full === stored;
+        });
+        if (match) {
+          return {abbr: match.split('=')[0].trim(), fullName: match.split('=').slice(1).join('=').trim()};
+        }
+        return {abbr: stored, fullName: stored};
+      });
+      const tagsJson = JSON.stringify(initTags).replace(/"/g,'&quot;');
+      return `<div class="fg" style="grid-column:1/-1">
         <label>${f.label}</label>
-        <div class="color-panel" id="f_${f.key}_panel">${checkboxes}</div>
+        <div class="tag-input-wrap" id="f_${f.key}_wrap">
+          <div class="tag-input-box" id="f_${f.key}_box" onclick="document.getElementById('f_${f.key}_ti').focus()"></div>
+          <input type="text" class="tag-text-input" id="f_${f.key}_ti" autocomplete="off"
+            placeholder="Type to add color..."
+            oninput="colorTagInput(this,'${f.key}')"
+            onkeydown="colorTagKeydown(event,'${f.key}')"
+            onblur="setTimeout(()=>closeColorDrop('${f.key}'),200)">
+          <div class="tag-dropdown" id="f_${f.key}_drop"></div>
+        </div>
         <input type="hidden" id="f_${f.key}" value="${v}">
+        <script>initColorTags('${f.key}',${tagsJson});<\/script>
       </div>`;
     }
     if (f.type==='colors') {
@@ -1061,15 +1084,7 @@ function buildForm(rec, lockedKeys) {
       }
     });
   }
-  // Wire up color checkboxes to hidden input
-  const colorPanel = document.getElementById('f_pieceColors_panel');
-  if (colorPanel) {
-    colorPanel.addEventListener('change', () => {
-      const checked = [...colorPanel.querySelectorAll('.color-cb:checked')].map(c=>c.value);
-      document.getElementById('f_pieceColors').value = checked.join(', ');
-      autoPopulateSKU();
-    });
-  }
+  // Tag-input for colors is self-wiring via initColorTags()
   // Wire up shape input for auto-populate
   const shapeInput = document.getElementById('f_shape');
   if (shapeInput) shapeInput.addEventListener('input', autoPopulateSKU);
@@ -1077,6 +1092,122 @@ function buildForm(rec, lockedKeys) {
   const finishSel = document.getElementById('f_finish');
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
 }
+
+// ── COLOR TAG-INPUT ─────────────────────────────────────────────────────────
+// State per field key: array of {abbr, fullName}
+const colorTagState = {};
+let colorTagActiveIdx = -1;
+
+function initColorTags(key, initTags) {
+  colorTagState[key] = initTags || [];
+  renderColorTags(key);
+  // Move text input inside the box
+  const box = document.getElementById('f_' + key + '_box');
+  const ti  = document.getElementById('f_' + key + '_ti');
+  if (box && ti) box.appendChild(ti);
+}
+
+function renderColorTags(key) {
+  const box  = document.getElementById('f_' + key + '_box');
+  const hidden = document.getElementById('f_' + key);
+  if (!box || !hidden) return;
+  const ti = document.getElementById('f_' + key + '_ti');
+  // Remove existing tags (not the text input)
+  [...box.querySelectorAll('.color-tag')].forEach(el => el.remove());
+  const tags = colorTagState[key] || [];
+  tags.forEach((t, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'color-tag';
+    chip.innerHTML = `${t.fullName} <span class="color-tag-x" data-key="${key}" data-idx="${i}">&times;</span>`;
+    box.insertBefore(chip, ti);
+  });
+  // Update hidden input with full names (comma-separated) -- that's what the sheet stores
+  hidden.value = tags.map(t => t.fullName).join(', ');
+  autoPopulateSKU();
+}
+
+function colorTagInput(input, key) {
+  const q = input.value.toLowerCase().trim();
+  const drop = document.getElementById('f_' + key + '_drop');
+  colorTagActiveIdx = -1;
+  if (!q) { closeColorDrop(key); return; }
+  const current = (colorTagState[key] || []).map(t => t.abbr);
+  const matches = pieceColorOptions.filter(o => {
+    const abbr = o.split('=')[0].trim();
+    const full = o.split('=').slice(1).join('=').trim().toLowerCase();
+    return !current.includes(abbr) && (full.startsWith(q) || abbr.toLowerCase().startsWith(q));
+  });
+  if (!matches.length) { closeColorDrop(key); return; }
+  drop.innerHTML = matches.map((o, i) => {
+    const abbr = o.split('=')[0].trim();
+    const full = o.split('=').slice(1).join('=').trim();
+    return `<div class="tag-drop-item" data-abbr="${abbr}" data-full="${full}" data-key="${key}" onmousedown="addColorTag('${key}','${abbr}','${full.replace(/'/g,'\'')}')">${full}</div>`;
+  }).join('');
+  drop.classList.add('open');
+}
+
+function colorTagKeydown(e, key) {
+  const drop = document.getElementById('f_' + key + '_drop');
+  const items = [...drop.querySelectorAll('.tag-drop-item')];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    colorTagActiveIdx = Math.min(colorTagActiveIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === colorTagActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    colorTagActiveIdx = Math.max(colorTagActiveIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('active', i === colorTagActiveIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (colorTagActiveIdx >= 0 && items[colorTagActiveIdx]) {
+      const el = items[colorTagActiveIdx];
+      addColorTag(key, el.dataset.abbr, el.dataset.full);
+    } else if (items.length === 1) {
+      const el = items[0];
+      addColorTag(key, el.dataset.abbr, el.dataset.full);
+    }
+  } else if (e.key === 'Backspace') {
+    const ti = document.getElementById('f_' + key + '_ti');
+    if (ti && ti.value === '' && colorTagState[key] && colorTagState[key].length > 0) {
+      colorTagState[key].pop();
+      renderColorTags(key);
+    }
+  } else if (e.key === 'Escape') {
+    closeColorDrop(key);
+  }
+}
+
+function addColorTag(key, abbr, fullName) {
+  if (!colorTagState[key]) colorTagState[key] = [];
+  if (!colorTagState[key].find(t => t.abbr === abbr)) {
+    colorTagState[key].push({abbr, fullName});
+    renderColorTags(key);
+  }
+  const ti = document.getElementById('f_' + key + '_ti');
+  if (ti) { ti.value = ''; ti.focus(); }
+  closeColorDrop(key);
+}
+
+function removeColorTag(key, idx) {
+  if (colorTagState[key]) {
+    colorTagState[key].splice(idx, 1);
+    renderColorTags(key);
+  }
+}
+
+function closeColorDrop(key) {
+  const drop = document.getElementById('f_' + key + '_drop');
+  if (drop) drop.classList.remove('open');
+  colorTagActiveIdx = -1;
+}
+
+// Delegate tag removal clicks
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('color-tag-x')) {
+    removeColorTag(e.target.dataset.key, parseInt(e.target.dataset.idx));
+  }
+});
+// ── END COLOR TAG-INPUT ──────────────────────────────────────────────────────
 
 function getChainOptionsForType(typeVal) {
   const t = (typeVal||'').toUpperCase();
@@ -1355,7 +1486,16 @@ function buildSKUParts(components) {
   const metal = getChainMetal(pd.chain||'');
   const finReadable = finishReadable(pd.finish||'');
   const finShort = finishAbbr(pd.finish||'');
-  const colorAbbrs = (pd.pieceColors||'').split(',').map(c=>c.trim()).filter(Boolean).join('');
+  const colorAbbrs = (pd.pieceColors||'').split(',').map(c => {
+    const stored = c.trim();
+    if (!stored) return '';
+    const match = pieceColorOptions.find(o => {
+      const abbr = o.split('=')[0].trim();
+      const full = o.split('=').slice(1).join('=').trim();
+      return abbr === stored || full === stored;
+    });
+    return match ? match.split('=')[0].trim() : stored;
+  }).filter(Boolean).join('');
 
   const pkgBase  = [typeParent, shapeStr, metal, finReadable].filter(Boolean).join('-');
   const etsyBase = [typeParent, shapeStr, metal, finShort].filter(Boolean).join('-');
@@ -1483,14 +1623,7 @@ async function saveRecord() {
     if (match) rec.finish = match.split('=').slice(1).join('=').trim();
   }
 
-  // Expand color abbreviations to full names, comma separated
-  if (rec.pieceColors) {
-    rec.pieceColors = rec.pieceColors.split(',').map(abbr => {
-      const a = abbr.trim();
-      const match = pieceColorOptions.find(o => o.split('=')[0].trim() === a);
-      return match ? match.split('=').slice(1).join('=').trim() : a;
-    }).join(', ');
-  }
+  // Colors are already stored as full names by the tag-input widget -- no expansion needed
 
   if (editingId!==null) {
     // Find record - could be in data directly or inside a _siblings array
