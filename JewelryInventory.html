@@ -89,6 +89,7 @@ KEY BEHAVIORS
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
+v1.8.69  sortFinishParts uses hardcoded ORDER not finishOptions (fixes Matte & Patina)
 v1.8.68  Guard sortFinishParts/normalizeFinishName against empty finishOptions
 v1.8.67  Normalize stored finish on edit open; extract sortFinishParts; block No Finish from isNew
 v1.8.66  Fix finish sort — derive word order from combo definitions in finishOptions
@@ -432,7 +433,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.68';
+const APP_VERSION = 'v1.8.69';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1386,22 +1387,17 @@ function getFinishAbbr(fullName) {
 }
 
 function sortFinishParts(arr) {
-  // Sort finish words into canonical order using finishOptions combo definitions.
-  // e.g. "PM = Patina & Matte" means Patina=0, Matte=1 → always "Patina & Matte"
+  // Sort finish words into hardcoded canonical order.
+  // Order matches Abbreviations_Published combo definitions (e.g. PM = Patina & Matte).
+  // Hardcoded so sort is not dependent on finishOptions being loaded.
   if (!arr || !arr.length) return arr;
-  const finishWordOrder = {};
-  (finishOptions || []).forEach(o => {
-    const full = o.split('=').slice(1).join('=').trim();
-    full.split('&').forEach((part, idx) => {
-      const word = part.replace(/\(Front\)|\(Back\)/g,'').trim();
-      if (!(word in finishWordOrder) || idx < finishWordOrder[word]) {
-        finishWordOrder[word] = idx;
-      }
-    });
-  });
+  const ORDER = ['Solder','Flame','Patina','Alcohol Ink','Copper','Clear','Gloss','Matte','Resin','Satin','UV Resin','No Finish'];
   return [...arr].sort((a, b) => {
-    const ai = finishWordOrder[a] !== undefined ? finishWordOrder[a] : 99;
-    const bi = finishWordOrder[b] !== undefined ? finishWordOrder[b] : 99;
+    const ai = ORDER.indexOf(a);
+    const bi = ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
     return ai - bi;
   });
 }
@@ -1409,7 +1405,6 @@ function sortFinishParts(arr) {
 function normalizeFinishName(fullName) {
   // Normalize a stored finish string to canonical order
   if (!fullName || fullName.includes('(Front)') || fullName.includes('(Back)')) return fullName;
-  if (!finishOptions || !finishOptions.length) return fullName; // not loaded yet, return as-is
   const parts = fullName.split('&').map(p => p.trim()).filter(Boolean);
   return sortFinishParts(parts).join(' & ');
 }
