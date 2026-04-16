@@ -68,6 +68,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.54  SKIP/No Finish: mutual exclusivity + blank SKU segment
 v1.8.53  Add copper diamond favicon
 v1.8.52  Fix color tags not pre-populating on Edit open
 v1.8.51  Fix color tag-input text box rendering inside tag box
@@ -396,7 +397,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.53';
+const APP_VERSION = 'v1.8.54';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1350,6 +1351,15 @@ function onFinishFBToggle() {
 }
 
 function onFinishChange() {
+  // SKIP = No Finish mutual exclusivity
+  const justChanged = event && event.target;
+  if (justChanged && justChanged.value === 'No Finish' && justChanged.checked) {
+    // No Finish checked -- uncheck everything else
+    document.querySelectorAll('.finish-cb').forEach(cb => { if (cb.value !== 'No Finish') cb.checked = false; });
+  } else if (justChanged && justChanged.value !== 'No Finish' && justChanged.checked) {
+    // Anything else checked -- uncheck No Finish
+    document.querySelectorAll('.finish-cb[value="No Finish"]').forEach(cb => cb.checked = false);
+  }
   const tog = document.getElementById('finishFBToggle');
   const isFB = tog && tog.checked;
   let fullName, abbr;
@@ -1491,8 +1501,9 @@ function buildSKUParts(components) {
   const shapeStr = shapes.join('');
 
   const metal = getChainMetal(pd.chain||'');
-  const finReadable = finishReadable(pd.finish||'');
-  const finShort = finishAbbr(pd.finish||'');
+  const isNoFinish = (pd.finish||'').trim() === 'No Finish';
+  const finReadable = isNoFinish ? '' : finishReadable(pd.finish||'');
+  const finShort = isNoFinish ? '' : finishAbbr(pd.finish||'');
   const colorAbbrs = (pd.pieceColors||'').split(',').map(c => {
     const stored = c.trim();
     if (!stored) return '';
