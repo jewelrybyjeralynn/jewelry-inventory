@@ -89,6 +89,7 @@ KEY BEHAVIORS
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
+v1.8.68  Guard sortFinishParts/normalizeFinishName against empty finishOptions
 v1.8.67  Normalize stored finish on edit open; extract sortFinishParts; block No Finish from isNew
 v1.8.66  Fix finish sort — derive word order from combo definitions in finishOptions
 v1.8.65  Fix finish sort — use BASE_FINISHES order not finishOptions combo strings
@@ -1387,8 +1388,9 @@ function getFinishAbbr(fullName) {
 function sortFinishParts(arr) {
   // Sort finish words into canonical order using finishOptions combo definitions.
   // e.g. "PM = Patina & Matte" means Patina=0, Matte=1 → always "Patina & Matte"
+  if (!arr || !arr.length) return arr;
   const finishWordOrder = {};
-  finishOptions.forEach(o => {
+  (finishOptions || []).forEach(o => {
     const full = o.split('=').slice(1).join('=').trim();
     full.split('&').forEach((part, idx) => {
       const word = part.replace(/\(Front\)|\(Back\)/g,'').trim();
@@ -1407,6 +1409,7 @@ function sortFinishParts(arr) {
 function normalizeFinishName(fullName) {
   // Normalize a stored finish string to canonical order
   if (!fullName || fullName.includes('(Front)') || fullName.includes('(Back)')) return fullName;
+  if (!finishOptions || !finishOptions.length) return fullName; // not loaded yet, return as-is
   const parts = fullName.split('&').map(p => p.trim()).filter(Boolean);
   return sortFinishParts(parts).join(' & ');
 }
