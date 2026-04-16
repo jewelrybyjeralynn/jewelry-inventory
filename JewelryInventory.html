@@ -88,6 +88,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.67  Normalize stored finish on edit open; extract sortFinishParts; block No Finish from isNew
 v1.8.66  Fix finish sort — derive word order from combo definitions in finishOptions
 v1.8.65  Fix finish sort — use BASE_FINISHES order not finishOptions combo strings
 v1.8.64  Finish parts sorted by abbreviation table order (Patina & Matte not Matte & Patina)
@@ -429,7 +430,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.66';
+const APP_VERSION = 'v1.8.67';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -983,6 +984,8 @@ function buildForm(rec, lockedKeys) {
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='multifinish') {
+      // Normalize stored finish to canonical order before rendering checkboxes
+      if (v) v = normalizeFinishName(v);
       const isFB = v && (v.includes('(Front)') || v.includes('(Back)'));
       const BASE_FINISHES = ['Alcohol Ink','Clear','Copper','Flame','Gloss','Matte','No Finish','Patina','Resin','Satin','Solder','UV Resin'];
       // Parse current value back to checkboxes
@@ -1380,10 +1383,9 @@ function getFinishAbbr(fullName) {
   }).join('');
 }
 
-function buildFinishFullName(sameArr, frontArr, backArr) {
-  // Sort finish parts using canonical order from finishOptions combos.
-  // e.g. "PM = Patina & Matte" tells us Patina comes before Matte.
-  // Build a position map: each time a word appears in any combo, record its earliest position.
+function sortFinishParts(arr) {
+  // Sort finish words into canonical order using finishOptions combo definitions.
+  // e.g. "PM = Patina & Matte" means Patina=0, Matte=1 → always "Patina & Matte"
   const finishWordOrder = {};
   finishOptions.forEach(o => {
     const full = o.split('=').slice(1).join('=').trim();
@@ -1394,11 +1396,22 @@ function buildFinishFullName(sameArr, frontArr, backArr) {
       }
     });
   });
-  const sortByTable = arr => [...arr].sort((a, b) => {
+  return [...arr].sort((a, b) => {
     const ai = finishWordOrder[a] !== undefined ? finishWordOrder[a] : 99;
     const bi = finishWordOrder[b] !== undefined ? finishWordOrder[b] : 99;
     return ai - bi;
   });
+}
+
+function normalizeFinishName(fullName) {
+  // Normalize a stored finish string to canonical order
+  if (!fullName || fullName.includes('(Front)') || fullName.includes('(Back)')) return fullName;
+  const parts = fullName.split('&').map(p => p.trim()).filter(Boolean);
+  return sortFinishParts(parts).join(' & ');
+}
+
+function buildFinishFullName(sameArr, frontArr, backArr) {
+  const sortByTable = arr => sortFinishParts(arr);
   if (frontArr.length || backArr.length) {
     // Front/back mode — sort each group independently
     const parts = [];
@@ -1451,7 +1464,7 @@ function onFinishChange() {
   // Look up abbreviation
   abbr = getFinishAbbr(fullName);
   // Check if this is a new combo not in finishOptions
-  const isNew = fullName && !finishOptions.some(o => o.split('=').slice(1).join('=').trim() === fullName);
+  const isNew = fullName && fullName !== 'No Finish' && !finishOptions.some(o => o.split('=').slice(1).join('=').trim() === fullName);
   if (isNew && fullName) {
     const newEntry = `${abbr} = ${fullName}`;
     finishOptions.push(newEntry);
