@@ -68,6 +68,8 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.56  Fix favicon data URL causing postMessage AbortSignal error
+v1.8.55  Add No Finish to finish checkbox list
 v1.8.54  SKIP/No Finish: mutual exclusivity + blank SKU segment
 v1.8.53  Add copper diamond favicon
 v1.8.52  Fix color tags not pre-populating on Edit open
@@ -115,7 +117,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jewelry Inventory</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHBvbHlnb24gcG9pbnRzPSIxNiwyIDMwLDE2IDE2LDMwIDIsMTYiIGZpbGw9IiNiODczMzMiLz48cG9seWdvbiBwb2ludHM9IjE2LDggMjQsMTYgMTYsMjQgOCwxNiIgZmlsbD0iIzFhMTYxMiIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjMiIGZpbGw9IiNiODczMzMiLz48L3N2Zz4=">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><polygon points="16,2 30,16 16,30 2,16" fill="%23b87333"/><polygon points="16,8 24,16 16,24 8,16" fill="%231a1612"/><circle cx="16" cy="16" r="3" fill="%23b87333"/></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
   :root {
@@ -397,7 +399,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.54';
+const APP_VERSION = 'v1.8.56';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -952,7 +954,7 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='multifinish') {
       const isFB = v && (v.includes('(Front)') || v.includes('(Back)'));
-      const BASE_FINISHES = ['Alcohol Ink','Aluminum','Clear','Copper','Flame','Gloss','Matte','Patina','Resin','Satin','Solder','UV Resin'];
+      const BASE_FINISHES = ['Alcohol Ink','Aluminum','Clear','Copper','Flame','Gloss','Matte','No Finish','Patina','Resin','Satin','Solder','UV Resin'];
       // Parse current value back to checkboxes
       let frontChecked = [], backChecked = [], sameChecked = [];
       if (v) {
