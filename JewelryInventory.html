@@ -89,6 +89,7 @@ KEY BEHAVIORS
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
+v1.8.78  Fix logo clear search -- use function instead of broken inline JS
 v1.8.77  Logo click also clears detail pane
 v1.8.76  Click logo to clear search box
 v1.8.75  New finish combos write to sheet on Save only, not on each checkbox click
@@ -367,7 +368,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <!-- APP -->
 <div id="appScreen">
   <header>
-    <div class="logo" onclick="document.getElementById('search').value='';selectedIdx=null;render();document.getElementById('detailPane').innerHTML='<div class=\"empty-state\"><div class=\"big\">◈</div><div>Select a SKU to view details</div></div>';" style="cursor:pointer" title="Clear search">◈ Jewelry Inventory <span id="totalCount"></span><span id="appVersion" style="color:var(--text-muted);font-size:9px;margin-left:8px"></span></div>
+    <div class="logo" onclick="clearSearch()" style="cursor:pointer" title="Clear search">◈ Jewelry Inventory <span id="totalCount"></span><span id="appVersion" style="color:var(--text-muted);font-size:9px;margin-left:8px"></span></div>
     <div class="search-wrap">
       <span class="si">⌕</span>
       <input type="text" id="search" placeholder="Search SKU, description, color, chain, Etsy title..." autocomplete="off">
@@ -441,7 +442,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.77';
+const APP_VERSION = 'v1.8.78';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1857,6 +1858,13 @@ async function saveRecord() {
       showToast('Save failed: ' + err.message);
     }
   }
+}
+
+function clearSearch() {
+  document.getElementById('search').value = '';
+  selectedIdx = null;
+  render();
+  document.getElementById('detailPane').innerHTML = '<div class="empty-state"><div class="big">◈</div><div>Select a SKU to view details</div></div>';
 }
 
 function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
