@@ -89,6 +89,7 @@ KEY BEHAVIORS
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
+v1.8.72  Fix SET-BR SKU lock — hasNonPD check now includes parent sibling itself
 v1.8.71  PD type gets same Chain Length Config + Extension Chain as NK
 v1.8.70  Double-click left pane SKU item opens edit modal
 v1.8.69  sortFinishParts uses hardcoded ORDER not finishOptions (fixes Matte & Patina)
@@ -435,7 +436,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.71';
+const APP_VERSION = 'v1.8.72';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1632,8 +1633,8 @@ function autoPopulateSKU() {
 
   if (isSetType(typeVal) && window.__addComponentParentId) {
     const parent = data.find(r => r._id === window.__addComponentParentId);
-    // Component 3+: parent already has 2+ siblings — lock SKU to existing value
-    const hasNonPD = parent && (parent._siblings||[]).some(s => s !== parent && !(s.type||'').includes('-PD'));
+    // Component 3+: set already has a non-PD component — lock SKU to existing value
+    const hasNonPD = parent && (parent._siblings||[]).some(s => !(s.type||'').includes('-PD'));
     if (parent && hasNonPD) {
       pkgSKU  = parent.packagingSKU;
       etsySKU = parent.newEtsySKU;
