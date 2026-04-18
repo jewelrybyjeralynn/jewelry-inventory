@@ -8,7 +8,7 @@
 ---
 
 ## Current Version
-**v1.8.44** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
+**v1.8.92** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
 
 ---
 
@@ -49,15 +49,21 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By
 17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
 22:ETSY ListingID  23:ETSY SKU  24:ETSY Title  25:ETSY Status  26:ETSY Price
 27:ETSY URL  28:Update Templates  29:Template - Title Custom Intro
-30:Template - Components Necklace Length Options
-31:Template - Why You will Love it  32:Template - Tags
-33:Added_Timestamp  34:Row_ID  35:API_Edit
+30:Template - Components Necklace Length Options  31:Template - Combined
+32:Template - Tags  33:Added_Timestamp  34:Row_ID  35:API_Edit
 ```
 
 **Abbreviations_Published columns:**
 ```
 0:Type  1:Shape  2:Finish  3:Chain Metal  4:Colors  5:Material  6:Colors_Backup
 ```
+
+**Abbreviations_Published notes:**
+- `Colors` column: 32 color entries (format: `ABBR = Full Name`, e.g. `GN = Green`)
+- `Colors Backup` column: historical reference only, not used in app
+- `Finish` column includes `SKIP = No Finish` — triggers mutual-exclusivity behavior
+- `Material` column: add new values here and they appear in the dropdown automatically on next load
+- No-finish materials (finish panel disabled, stores No Finish on save): Aluminum, Stainless Steel, Bead, Zinc Alloy, Memory Wire
 
 ---
 
@@ -70,7 +76,8 @@ All POSTed as JSON with `Content-Type: text/plain` and `mode: no-cors`.
 | `append` | Add new row. Sets Added_Timestamp, addedToEtsy=NOT LISTED, generates Row_ID UUID, sets API_Edit |
 | `update` | Update row by Row_ID (falls back to PKG SKU + Object Description). Sets API_Edit timestamp |
 | `updateSKU` | Update Packaging SKU + New ETSY SKU on ALL rows matching _oldPackagingSKU. Sets API_Edit |
-| `addFinishAbbr` | Append new finish abbreviation to Abbreviations_Published |
+| `addFinishAbbr` | Append new finish abbreviation to Abbreviations_Published (fires on Save only, not on checkbox click) |
+| `runTemplates` | **PENDING — see To-Do** |
 
 ### Row_ID
 - Every row has a UUID in the `Row_ID` column (backfilled for existing rows)
@@ -87,10 +94,13 @@ TypeParent-Shape-ChainMetal-FinishReadable[-Colors]   (Packaging SKU, max 38 cha
 TypeParent-Shape-ChainMetal-FinishAbbr[-Colors]       (New ETSY SKU, max 32 chars)
 ```
 
+- **Packaging SKU** readable form (e.g. `FlameMatte`) — written on physical package
+- **New ETSY SKU** abbreviated form (e.g. `FM`) — Etsy character limit
 - SET types → TypeParent = `SET`
-- Non-set → TypeParent = type abbreviation (NK, ER, etc.)
+- Non-set → TypeParent = type abbreviation (NK, ER, PD, etc.)
 - Colors dropped if combined SKU exceeds length limit
 - SKU auto-population is skipped when editing an existing record
+- `SS` in the SKU always comes from chain metal abbreviation, NOT from material or finish
 
 ---
 
@@ -98,10 +108,11 @@ TypeParent-Shape-ChainMetal-FinishAbbr[-Colors]       (New ETSY SKU, max 32 char
 
 1. SET-PD saved first — solo SKU generated
 2. First non-PD component saved — combined SKU generated, updateSKU updates all rows
-3. Additional components — inherit existing SKU, no recalculation
-4. Warning fires on Type change if non-PD selected without existing SET-PD
-5. Save blocked if no SET-PD sibling exists
-6. **Assumption: SET-PD is always entered first**
+3. Additional components (3+) — inherit existing locked SKU, no recalculation
+4. `hasNonPD` check includes the parent record itself (fixes SET-BR inheriting wrong SKU)
+5. Warning fires on Type change if non-PD selected without existing SET-PD
+6. Save blocked if no SET-PD sibling exists
+7. **Assumption: SET-PD is always entered first**
 
 ---
 
@@ -119,32 +130,93 @@ TypeParent-Shape-ChainMetal-FinishAbbr[-Colors]       (New ETSY SKU, max 32 char
 
 ## Form Field Rules
 
-- Extension Chain + Chain Length Config: only enabled for NK and SET-PD
-- `rec.type` takes priority over DOM `f_type` value when building edit form (prevents stale type from previous edit)
-- Finish: 12 base checkboxes, alphabetical, 4 cols. Front/Back toggle on same line as label
-- Colors: full names shown, abbreviations used in SKU
+- Extension Chain + Chain Length Config: enabled for NK, PD, and SET-PD
+- `rec.type` takes priority over DOM `f_type` value when building edit form
 - Type dropdown: order from Abbreviations_Published (not alphabetical)
 - Chain Length Config options: Standard, Minor Adjustment, Requires Modifications, None
+- Chain/Bead/Clasp Details placeholder: `e.g. beads, triangle frame, connectors, charms`
+
+### Finish
+- 11 base checkboxes + No Finish, alphabetical, 4 cols. Front/Back toggle on same line as label
+- New combos written to Abbreviations_Published via `addFinishAbbr` **on Save only** (not on checkbox click)
+- **No Finish (SKIP):** mutually exclusive with all other finishes. Produces no finish segment in SKU.
+- **Aluminum removed** from finish checkboxes — set automatically by material logic
+- Finish parts always sorted to canonical order regardless of checkbox click order
+  - Hardcoded ORDER: `Solder → Flame → Patina → Alcohol Ink → Heat → Copper → Clear → Gloss → Matte → Resin → UV Resin → No Finish`
+  - Stored finish normalized on Edit open (fixes stale Matte & Patina → Patina & Matte)
+
+### Material Auto-Finish Rules
+| Material | Behavior |
+|----------|----------|
+| Aluminum | Finish panel disabled, stores No Finish |
+| Stainless Steel | Finish panel disabled, stores No Finish |
+| Bead | Finish panel disabled, stores No Finish |
+| Zinc Alloy | Finish panel disabled, stores No Finish |
+| Memory Wire | Finish panel disabled, stores No Finish |
+
+Note: `SS` in the SKU comes from chain metal abbreviation, not material/finish.
+
+### Colors
+- **Tag-input autocomplete widget** (replaced checkbox grid in v1.8.50)
+- Type partial name to filter; Enter or click to add tag; Backspace removes last tag
+- Stored in sheet as full names comma-separated (e.g. `Green, Red`)
+- Abbreviations used in SKU (e.g. `GNRD`)
+- Color list sourced live from Abbreviations_Published `Colors` column
+
+### Heat Finish
+- Added in v1.8.73 (replaced Satin)
+- Combos defined in Abbreviations_Published: HT, HM, HC, HG, HR, SHM, SHC, SHG, SHR
+- Heat sorts before Clear/Gloss/Matte in canonical ORDER
 
 ---
 
-## Base Finish Abbreviations
+## Detail View
 
-```
-FLM=Flame  MTT=Matte  CLR=Clear  GLS=Gloss  RES=Resin
-SLD=Solder  PAT=Patina  SAT=Satin  UVR=UV Resin
-ALK=Alcohol Ink  COP=Copper  ALU=Aluminum
-```
+- Single-click left pane item → selects and shows detail
+- **Double-click left pane item** → opens Edit modal
+- Single-click component in SKU Group list → switches detail to that component
+- **Double-click component in SKU Group list** → opens Edit modal for that component
+- Left panel subtitle order: Shape · Type · Chain
+- SKU Group component list shows: Type plain name + Shape · Wide x Height · Drop Length
+- Chain & Hardware column order: Chain Or Hardware | Chain Or Drop Length | Extension Chain | Chain/Bead/Clasp Details
+- Click **◈ Jewelry Inventory** logo → clears search and resets detail pane
+
+---
+
+## Reference Section (Detail View)
+
+Shows (in order):
+1. **Run Templates** button (always shown) + **Copy Template - Combined** button (shown if data exists)
+2. Template - Components Necklace Length Options (pre-wrap, selectable)
+3. Template - Tags (pre-wrap, selectable)
+4. Features & Details (if populated)
+
+Template fields use `white-space: pre-wrap` for copy-paste into Etsy.
+`window.__templateCombined` and `window.__currentPackagingSKU` set on every detail view load.
+
+---
+
+## Search
+
+- Strips hyphens and spaces from both query and data before comparing
+- Searches: Packaging SKU, New ETSY SKU, Object Description, Finish, Colors, Chain
+- Old SKU excluded from search (caused false positives e.g. "set" matching old ER SKUs)
 
 ---
 
 ## Header Filters
 
-| Filter | Field | Notes |
-|--------|-------|-------|
-| Added To Etsy | addedToEtsy | Multi-select |
-| Etsy Status | etsyStatus | Multi-select |
-| Type | type (uses 'finish' filterState key) | Set matches any type starting with SET- |
+| Filter | Default |
+|--------|---------|
+| Added To Etsy | Yes, NOT LISTED, REDO |
+| Etsy Status | Active, Inactive, Expired, No Listing |
+| Type | All |
+
+---
+
+## Favicon
+
+Copper diamond PNG embedded as base64 inline `<link rel="icon" type="image/png">`. SVG data URLs cause AbortSignal cloning errors in sandboxed iframes.
 
 ---
 
@@ -157,39 +229,114 @@ ALK=Alcohol Ink  COP=Copper  ALU=Aluminum
 
 ---
 
+## To-Do / Pending
+
+### Run Templates Integration (deferred)
+**Goal:** Add a Run Templates button in the inventory app that calls the existing TemplateRunner Apps Script to generate and write template content for the current SKU, then refreshes the Reference section.
+
+**Current state:** Button exists in UI (v1.8.92), fires a `runTemplates` action via no-cors POST. Apps Script doesn't yet handle this action. CSV refresh after 4s delay is the fallback.
+
+**The problem:** The inventory app runs on GitHub Pages (browser). It can only call Apps Script via `fetch()` with `no-cors`, which means it **cannot read the response**. The TemplateRunner sidebar uses `google.script.run` which is Google Sheets-only and not available from GitHub Pages.
+
+**Recommended solution (Option 2 — CORS-enabled endpoint):**
+
+*Apps Script changes needed:*
+- Add `case 'runTemplates':` to `doPost` that calls `runBothTemplatesForPackagingSku(packagingSku, false)` and returns JSON with CORS headers
+- Add `doOptions()` function to handle browser preflight requests
+- Re-deploy as a new version (execute as: me, access: anyone)
+
+*Inventory app changes needed:*
+- Change `runTemplates` fetch from `no-cors` to normal fetch that reads response
+- On success, update `window.__templateCombined`, `displayRec.templateComponents`, `displayRec.templateTags` directly from response
+- Re-render the Reference section without a full CSV refresh
+- Show warnings in toast if Apps Script returns any
+
+*Risk:* Re-deployment step is error-prone (wrong execute-as or access level breaks all writes). The CORS preflight (`doOptions`) may need trial and error. Test thoroughly before deploying over the live endpoint.
+
+*Alternative (Option 3 — no code change):* Add a button that opens the Google Sheet with the sidebar pre-loaded for the current SKU. Zero risk, works today.
+
+**Related files:**
+- `TemplateRunner-04182026.txt` — Apps Script functions (`runBothTemplatesForPackagingSku`, `buildCombinedOutput_`, etc.)
+- `sidebar.html` — Current Google Sheets sidebar UI (reference for UI patterns)
+
+---
+
+## Decisions Log
+
+| Decision | Rationale |
+|----------|-----------|
+| Single HTML file | No build step; deploy = upload one file to GitHub |
+| no-cors POST to Apps Script | GitHub Pages can't proxy; Apps Script accepts no-cors |
+| Row_ID UUID for updates | Reliable row lookup vs. PKG SKU + description which can change |
+| Full names in Colors column | Sheet stores `Green, Red`; app converts to abbreviations for SKU |
+| Tag-input for colors | Checkbox grid too large with 32 colors; tag-input is faster |
+| No-finish materials auto-set | These materials don't get a separate finish treatment; avoids user error |
+| No Finish (SKIP) mutually exclusive | "Flame & No Finish" makes no semantic sense |
+| Finish sort hardcoded ORDER | finishOptions-derived sort was unreliable when CSV stale |
+| addFinishAbbr on Save only | Writing on each checkbox click caused partial combos (e.g. SLDHeat) to be written |
+| SS in SKU from chain metal | Stainless Steel material = finding type, not a finish descriptor |
+| Search excludes Old SKU | Old SKUs contain "Set" causing false positives on ER records |
+| Double-click to edit | Single-click navigates; double-click is natural "edit this" gesture |
+| PNG base64 favicon | SVG data URLs cause AbortSignal cloning errors in sandboxed iframes |
+| inline script in innerHTML won't fire | Browser security; use data attributes + explicit JS call instead |
+| Template Combined button only | User wants to copy-paste, not read in the app |
+
+---
+
 ## Version Log
 
 | Version | Change |
 |---------|--------|
+| v1.8.92 | Run Templates button in Reference section (Apps Script integration pending) |
+| v1.8.91 | Template - Combined button moved to first in Reference section |
+| v1.8.90 | Fix Template - Combined copy button using proper function |
+| v1.8.89 | Template - Combined shows button only, no text display |
+| v1.8.88 | Reference: Template - Combined with Copy button; removed Title Custom Intro |
+| v1.8.87 | Reference section: added Template - Title Custom Intro |
+| v1.8.86 | Template fields preserve newline formatting for copy-paste |
+| v1.8.85 | Reference section: removed Old SKU, added Components + Tags template fields |
+| v1.8.84 | Memory Wire added to no-finish material list |
+| v1.8.83 | Old SKU excluded from search |
+| v1.8.82 | Left panel list order: Shape · Type · Chain |
+| v1.8.81 | SKU group component list: Wide x Height before Chain Or Drop Length |
+| v1.8.80 | SKU group component list shows Type + Shape |
+| v1.8.79 | SKU group component list shows Type plain name instead of object description |
+| v1.8.78 | Fix logo clear search — use function instead of broken inline JS |
+| v1.8.77 | Logo click also clears detail pane |
+| v1.8.76 | Click logo to clear search box |
+| v1.8.75 | New finish combos write to sheet on Save only, not on each checkbox click |
+| v1.8.74 | Fix finish sort ORDER: Heat before Clear/Gloss/Matte |
+| v1.8.73 | Replace Satin with Heat in finish list |
+| v1.8.72 | Fix SET-BR SKU lock — hasNonPD check includes parent sibling |
+| v1.8.71 | PD type gets same Chain Length Config + Extension Chain as NK |
+| v1.8.70 | Double-click left pane SKU item opens edit modal |
+| v1.8.69 | sortFinishParts uses hardcoded ORDER (fixes Matte & Patina) |
+| v1.8.68 | Guard sortFinishParts/normalizeFinishName against empty finishOptions |
+| v1.8.67 | Normalize stored finish on edit open; extract sortFinishParts |
+| v1.8.66 | Fix finish sort — derive word order from combo definitions |
+| v1.8.65 | Fix finish sort — use BASE_FINISHES order |
+| v1.8.64 | Finish parts sorted by abbreviation table order |
+| v1.8.63 | Add Zinc Alloy to no-finish material list |
+| v1.8.62 | Aluminum/SS/Bead material disables finish panel, stores No Finish |
+| v1.8.61 | Updated HTML comments + PROJECT file |
+| v1.8.60 | Stainless Steel material auto-sets finish, disables finish panel |
+| v1.8.59 | Chain/Bead/Clasp Details placeholder hint text |
+| v1.8.58 | Aluminum material auto-sets finish, disables finish panel |
+| v1.8.57 | Fix favicon — switch to PNG base64 |
+| v1.8.56 | Fix favicon data URL causing postMessage AbortSignal error |
+| v1.8.55 | Add No Finish to finish checkbox list |
+| v1.8.54 | SKIP/No Finish: mutual exclusivity + blank SKU segment |
+| v1.8.53 | Add copper diamond favicon |
+| v1.8.52 | Fix color tags not pre-populating on Edit open |
+| v1.8.51 | Fix color tag-input text box rendering inside tag box |
+| v1.8.50 | Colors: checkbox grid replaced with tag-input autocomplete widget |
+| v1.8.49 | Search strips hyphens+spaces for fuzzy matching |
+| v1.8.48 | Double-click component in SKU group opens edit modal |
+| v1.8.47 | Extension Chain moved before Chain/Bead/Clasp Details in detail view |
 | v1.8.44 | Debug logging for update payload |
 | v1.8.43 | Row_ID added to COL_MAP, sent with update requests |
 | v1.8.42 | update fetch uses no-cors, COL_MAP template names fixed |
 | v1.8.41 | COL_MAP updated for new 36-column structure |
-| v1.8.40 | Characters removed from detail view |
-| v1.8.39 | Fixed stale DOM type on edit open |
-| v1.8.37 | SKU auto-population skipped when editing |
-| v1.8.36 | Tighter modal spacing, SKU fields sticky |
-| v1.8.35 | Finish label + Different Front/Back on same line |
-| v1.8.34 | Chain Length Config enabled correctly on Edit |
-| v1.8.33 | All siblings updated in memory after SET SKU update |
-| v1.8.32 | Added HTML comment block + project notes |
-| v1.8.31 | Chain Length Config — added None option |
-| v1.8.30 | Type filter plain names |
-| v1.8.29 | Replaced Finish filter with Type filter |
-| v1.8.28 | Detail view refreshes to edited record |
-| v1.8.27 | Extension Chain pre-populates in Edit |
-| v1.8.26 | Left panel shows Type · Shape · Chain |
-| v1.8.25 | BRACELET chain options only for BR/SET-BR |
-| v1.8.24 | Fixed hasNonPD captured before sibling add |
-| v1.8.23 | Fixed sibling grouping to use parentId |
-| v1.8.21 | Fixed no-cors missing on append fetch |
-| v1.8.18 | Warning on type change when no SET-PD |
-| v1.8.16 | SKU locks after first non-PD component |
-| v1.8.13 | Chain Or Hardware filtered by Type |
-| v1.8.12 | Fixed isSetType check |
-| v1.8.10 | Type dropdown follows spreadsheet order |
-| v1.8.0  | Finish replaced with multifinish checkboxes |
-| v1.7.0  | TypeParent column removed |
 
 ---
 
@@ -197,6 +344,7 @@ ALK=Alcohol Ink  COP=Copper  ALU=Aluminum
 
 - Mobile JS single-pane navigation not yet wired up (CSS done)
 - Debug console.log in update payload (v1.8.44) — remove when confirmed working
+- Run Templates Apps Script integration incomplete (see To-Do above)
 
 ---
 
