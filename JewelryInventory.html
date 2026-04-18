@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.99';
+const APP_VERSION = 'v1.8.100';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -966,7 +966,7 @@ function showDetail(r, sibIdx) {
 // FORM
 const FIELDS=[
   {key:'type',label:'Type',type:'type',third:true},
-  {key:'shape',label:'Shape',third:true},
+  {key:'shape',label:'Shape',type:'shape',third:true},
   {key:'material',label:'Material',type:'material',third:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
@@ -1141,6 +1141,20 @@ function buildForm(rec, lockedKeys) {
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+    }
+    if (f.type==='shape') {
+      return `<div class="fg" style="${f.third?'':'grid-column:span 2'}">
+        <label>${f.label}</label>
+        <div class="combo-wrap">
+          <input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Type or select shape..."
+            autocomplete="off"
+            oninput="filterShapeList(this.value)"
+            onfocus="openShapeList()"
+            onblur="setTimeout(()=>closeShapeList(),200)"
+            ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}>
+          <div class="combo-list" id="shapeComboList"></div>
+        </div>
+      </div>`;
     }
     if (f.type==='chain') {
       const currentType = (rec && rec.type) || (document.getElementById('f_type')||{}).value || '';
@@ -1395,6 +1409,36 @@ function renderChainList(filtered) {
     }).join('');
   }
   list.classList.add('open');
+}
+
+function filterShapeList(q) {
+  const list = document.getElementById('shapeComboList');
+  if (!q) { list.innerHTML=''; list.classList.remove('open'); return; }
+  const lq = q.toLowerCase();
+  // Get unique full shape names from shapeAbbrevMap keys (they are stored lowercased)
+  const names = Object.keys(shapeAbbrevMap).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+  const matches = names.filter(n => n.toLowerCase().includes(lq)).slice(0, 12);
+  if (!matches.length) { list.innerHTML=''; list.classList.remove('open'); return; }
+  list.innerHTML = matches.map(n =>
+    `<div class="combo-item" onmousedown="selectShape('${n.replace(/'/g,"\'")}')"><span>${n}</span></div>`
+  ).join('');
+  list.classList.add('open');
+}
+
+function openShapeList() {
+  const input = document.getElementById('f_shape');
+  if (input) filterShapeList(input.value);
+}
+
+function closeShapeList() {
+  const list = document.getElementById('shapeComboList');
+  if (list) list.classList.remove('open');
+}
+
+function selectShape(name) {
+  const input = document.getElementById('f_shape');
+  if (input) { input.value = name; autoPopulateSKU(); }
+  closeShapeList();
 }
 
 function filterChainList(q) {
