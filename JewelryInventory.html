@@ -89,6 +89,9 @@ KEY BEHAVIORS
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
+v1.8.80  Left pane component rows show Type plain name instead of abbreviation
+v1.8.81  SKU group component list: Wide x Height before Chain Or Drop Length
+v1.8.80  SKU group component list shows Type + Shape
 v1.8.79  SKU group component list shows Type plain name instead of object description
 v1.8.78  Fix logo clear search -- use function instead of broken inline JS
 v1.8.77  Logo click also clears detail pane
@@ -443,7 +446,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.79';
+const APP_VERSION = 'v1.8.81';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -821,7 +824,9 @@ function render() {
     const active = selectedIdx!==null && filtered[selectedIdx]===r;
     const sibs = r._siblings || [r];
     const descs = sibs.map(s => {
-        const parts = [s.type, s.shape, s.chain].filter(Boolean);
+        const typeEntry = typeOptions.find(o => o.split('=')[0].trim() === (s.type||'').split('-').pop());
+        const typePlain = typeEntry ? typeEntry.split('=').slice(1).join('=').trim() : (s.type||'');
+        const parts = [typePlain, s.shape, s.chain].filter(Boolean);
         return parts.join(' · ');
       }).filter(Boolean);
     const descHtml = descs.map(d=>`<div class="sku-desc">${d}</div>`).join('');
@@ -887,12 +892,12 @@ function showDetail(r, sibIdx) {
     </div></div>
     ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length}) — click to view/edit</div><div class="sib-list">
       ${sibs.map((s,si)=>{
-        const chainInfo = [s.chain, s.chainOrDropLength ? s.chainOrDropLength+'"' : null, formatSize(s.wideHeight)].filter(Boolean).join(' · ');
+        const chainInfo = [s.chain, formatSize(s.wideHeight), s.chainOrDropLength ? s.chainOrDropLength+'"' : null].filter(Boolean).join(' · ');
         const isCurrent = s === displayRec;
         const typeEntry = typeOptions.find(o => o.split('=')[0].trim() === (s.type||'').split('-').pop());
         const typePlain = typeEntry ? typeEntry.split('=').slice(1).join('=').trim() : (s.type||'—');
         return `<div class="sib-item ${isCurrent?'sib-current':''}" onclick="showDetail(window.__sibs[0],${si})" ondblclick="openEditModal(window.__sibs[${si}]._id)" style="cursor:pointer">
-          <span class="sib-desc">${typePlain}</span>
+          <span class="sib-desc">${typePlain}${s.shape ? ' ' + s.shape : ''}</span>
           ${chainInfo ? `<span class="sib-chain">${chainInfo}</span>` : ''}
         </div>`;
       }).join('')}
