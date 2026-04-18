@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.96';
+const APP_VERSION = 'v1.8.98';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -970,9 +970,9 @@ const FIELDS=[
   {key:'material',label:'Material',type:'material',third:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
-  {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications','None'],necklaceOnly:true,third:true},
-  {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
+  {key:'chain',label:'Chain Or Hardware',type:'chain'},
+  {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor Adjustment','Requires Modifications','None'],necklaceOnly:true,third:true},
   {key:'objectDescription',label:'Object Description',third:true,hidden:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads, triangle frame, connectors, charms',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
@@ -1653,6 +1653,11 @@ function buildSKUParts(components) {
 
   const metal = getChainMetal(pd.chain||'');
   const isNoFinish = (pd.finish||'').trim() === 'No Finish';
+
+  // CB = Chain Beads: insert after chain metal for PD/SET-PD when chainDetail contains 'bead'
+  const isBeadType = ['PD','SET-PD'].includes((pd.type||'').trim());
+  const hasChainBeads = isBeadType && /bead/i.test(pd.chainDetail||'');
+  const chainBeads = hasChainBeads ? 'CB' : '';
   const finReadable = isNoFinish ? '' : finishReadable(pd.finish||'');
   const finShort = isNoFinish ? '' : finishAbbr(pd.finish||'');
   const colorAbbrs = (pd.pieceColors||'').split(',').map(c => {
@@ -1666,8 +1671,8 @@ function buildSKUParts(components) {
     return match ? match.split('=')[0].trim() : stored;
   }).filter(Boolean).join('');
 
-  const pkgBase  = [typeParent, shapeStr, metal, finReadable].filter(Boolean).join('-');
-  const etsyBase = [typeParent, shapeStr, metal, finShort].filter(Boolean).join('-');
+  const pkgBase  = [typeParent, shapeStr, metal, chainBeads, finReadable].filter(Boolean).join('-');
+  const etsyBase = [typeParent, shapeStr, metal, chainBeads, finShort].filter(Boolean).join('-');
 
   const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
   const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
