@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.104';
+const APP_VERSION = 'v1.8.105';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1429,6 +1429,8 @@ function shapeKeydown(e) {
     e.preventDefault();
     if (shapeActiveIdx >= 0 && items[shapeActiveIdx]) {
       items[shapeActiveIdx].dispatchEvent(new MouseEvent('mousedown'));
+    } else if (items.length === 1) {
+      items[0].dispatchEvent(new MouseEvent('mousedown'));
     }
   } else if (e.key === 'Escape') {
     closeShapeList();
@@ -1442,7 +1444,7 @@ function filterShapeList(q) {
   const lq = q.toLowerCase();
   // Get unique full shape names from shapeAbbrevMap keys (they are stored lowercased)
   const names = Object.keys(shapeAbbrevMap).map(k => k.charAt(0).toUpperCase() + k.slice(1));
-  const matches = names.filter(n => n.toLowerCase().includes(lq)).slice(0, 12);
+  const matches = names.filter(n => n.toLowerCase().startsWith(lq)).slice(0, 12);
   if (!matches.length) { list.innerHTML=''; list.classList.remove('open'); return; }
   list.innerHTML = matches.map(n =>
     `<div class="combo-item" onmousedown="selectShape('${n.replace(/'/g,"\'")}')"><span>${n}</span></div>`
