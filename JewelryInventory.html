@@ -90,6 +90,8 @@ VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
 v1.8.80  Left pane component rows show Type plain name instead of abbreviation
+v1.8.83  Old SKU excluded from search
+v1.8.82  Left panel list order: Shape · Type · Chain
 v1.8.81  SKU group component list: Wide x Height before Chain Or Drop Length
 v1.8.80  SKU group component list shows Type + Shape
 v1.8.79  SKU group component list shows Type plain name instead of object description
@@ -446,7 +448,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.81';
+const APP_VERSION = 'v1.8.83';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -781,7 +783,7 @@ function render() {
   filtered = data.filter(r=>{
     if (!r.packagingSKU) return false;
     if (q) {
-      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain,r.oldSKU].filter(Boolean).join(' ').toLowerCase();
+      const s=[r.packagingSKU,r.newEtsySKU,r.objectDescription,r.finish,r.pieceColors,r.chain].filter(Boolean).join(' ').toLowerCase();
       const normalize = v => v.replace(/[-\s]/g,'');
       if (!s.includes(q) && !normalize(s).includes(normalize(q))) return false;
     }
@@ -826,7 +828,7 @@ function render() {
     const descs = sibs.map(s => {
         const typeEntry = typeOptions.find(o => o.split('=')[0].trim() === (s.type||'').split('-').pop());
         const typePlain = typeEntry ? typeEntry.split('=').slice(1).join('=').trim() : (s.type||'');
-        const parts = [typePlain, s.shape, s.chain].filter(Boolean);
+        const parts = [s.shape, typePlain, s.chain].filter(Boolean);
         return parts.join(' · ');
       }).filter(Boolean);
     const descHtml = descs.map(d=>`<div class="sku-desc">${d}</div>`).join('');
