@@ -91,6 +91,7 @@ VERSION LOG (recent)
 --------------------------------------------------------------------------------
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
 v1.8.80  Left pane component rows show Type plain name instead of abbreviation
+v1.8.90  Fix Template - Combined copy button using proper function
 v1.8.89  Template - Combined shows button only, no text display
 v1.8.88  Reference: Template - Combined with Copy button; removed Title Custom Intro
 v1.8.87  Reference section: added Template - Title Custom Intro
@@ -455,7 +456,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.89';
+const APP_VERSION = 'v1.8.90';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -865,6 +866,12 @@ function formatSize(v) {
   return parts[0];
 }
 
+function copyTemplateCombined() {
+  const text = window.__templateCombined || '';
+  if (!text) { showToast('No template data'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => showToast('Copy failed'));
+}
+
 function showDetail(r, sibIdx) {
   // Always get the full sibling group from the primary record
   const primary = data.find(d => d.packagingSKU === r.packagingSKU && d._siblings) || r;
@@ -873,6 +880,7 @@ function showDetail(r, sibIdx) {
   // The record to display is the requested one (default to first)
   const displayRec = sibIdx !== undefined ? sibs[sibIdx] : (sibs.includes(r) ? r : sibs[0]);
   const hasEtsy = displayRec.etsyURL;
+  window.__templateCombined = displayRec.templateCombined || '';
   document.getElementById('detailPane').innerHTML=`
     <div class="det-title">
       <div>${primary.packagingSKU}</div>
@@ -917,7 +925,7 @@ function showDetail(r, sibIdx) {
       ${displayRec.templateComponents?f('Template - Components Necklace Length Options',displayRec.templateComponents,true,true):''}
       ${displayRec.templateTags?f('Template - Tags',displayRec.templateTags,true,true):''}
       ${displayRec.featuresDetails?f('Features & Details',displayRec.featuresDetails,true):''}
-      ${displayRec.templateCombined?`<div class="fld" style="grid-column:1/-1"><div class="flbl">Template - Combined <button class="btn sec" style="font-size:10px;padding:3px 9px;margin-left:8px" onclick="navigator.clipboard.writeText(${JSON.stringify(displayRec.templateCombined||'')}).then(()=>showToast('Copied to clipboard'))">Copy</button></div></div>`:''}
+      ${displayRec.templateCombined?`<div class="fld" style="grid-column:1/-1"><div class="flbl">Template - Combined <button class="btn sec" style="font-size:10px;padding:3px 9px;margin-left:8px" onclick="copyTemplateCombined()">Copy</button></div></div>`:''}
     </div></div>`;
 }
 
