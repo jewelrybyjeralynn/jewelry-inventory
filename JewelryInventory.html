@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.108';
+const APP_VERSION = 'v1.8.109';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1910,6 +1910,12 @@ async function saveRecord() {
       }
     }
     const original = targetRec ? {...targetRec} : {};
+    // Block save if no rowId -- record was added this session and not yet refreshed
+    // Without rowId, Apps Script cannot reliably find the correct row to update
+    if (!original.rowId) {
+      alert('⚠️ This record was added in the current session and has not been refreshed yet.\n\nPlease hit Refresh first, then re-open Edit. This ensures the correct row is updated in Google Sheets.');
+      return;
+    }
     if (targetRec) Object.assign(targetRec, rec);
     rec._action = 'update';
     rec._rowId = original.rowId || '';
