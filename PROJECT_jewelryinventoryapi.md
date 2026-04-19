@@ -9,87 +9,38 @@
 ---
 
 ## Current Version
-**v1.8.109** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
+**v1.8.112** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
 
 ---
 
-## 🔴 ACTIVE BUG — START HERE NEXT SESSION
+## 🟡 ACTIVE WORK — START HERE NEXT SESSION
 
-### SET sibling edit overwrites wrong row
+### SET sibling edit bug — status as of v1.8.112
 
-**Symptom:** Editing a SET-ER and saving causes both SET-PD and SET-ER rows in the sheet to be overwritten with SET-ER data. Both rows end up as SET-ER.
+**Original symptom:** Editing a SET-ER overwrote both SET-PD and SET-ER rows with SET-ER data.
 
-**What we confirmed:**
-- Both records had valid Row_IDs (manually pasted UUIDs) -- bug still occurred
-- So Row_ID lookup IS working -- but both rows still got corrupted
-- This means Row_ID is NOT the root cause
-- Object Description is not a reliable fix either -- too many duplicate descriptions (e.g. "Rectangle Pendant Flame Matte" across many pieces)
+**Root cause found and fixed (this session):**
+The Apps Script `append` action was using a hardcoded `HEADERS` array (36 columns) that was out of sync with the actual sheet (40 columns). This caused `Row_ID` and `API_Edit` to be written to the wrong columns on every append. Records had blank `Row_ID`, so Row_ID lookup failed silently and the fallback lookups were unreliable for SETs.
 
-**Current suspects:**
-1. **In-memory mutation:** `Object.assign(targetRec, rec)` on line 1907 in saveRecord(). Since siblings share array references in `_siblings`, mutating `targetRec` may corrupt the sibling object in memory too. This explains visual corruption but not sheet corruption.
-2. **Two POSTs firing:** Something may be triggering two separate update POSTs -- one for each sibling. Need to verify.
-3. **Wrong data in payload:** `rec` object built from form fields may contain wrong type/data due to hidden field issues.
+**Fixes deployed this session:**
+1. **Apps Script append rewritten** -- now reads actual sheet headers at runtime instead of hardcoded `HEADERS` array. Immune to future column changes.
+2. **KEY_MAP expanded** -- added all new columns: `Previous ETSY ListingID`, `Template - Combined`, `Current Tags`, `Listing Output`, `EtsySync_Timestamp`, `EtsySync_UpdatedTimestamp`.
+3. **Third fallback improved** -- update action fallback is now PKG SKU + Type + Shape (was PKG SKU + Type only). Sends `_originalShape` captured at edit-open time.
+4. **Object Description removed from form** -- no longer shown in Add/Edit modal. Value is preserved from the in-memory record on save so sheet data is not lost. Still used in search and detail view.
+5. **Debug logging added to Apps Script** -- still present, remove after confirming SET edit bug is fully resolved.
+6. **Test/debug functions removed from Apps Script** -- only `doPost`, `doGet`, `generateUUID` remain.
 
-**We are flying blind because no-cors blocks the Apps Script response.**
+**What still needs testing:**
+- Full SET sibling edit flow end-to-end with the new code. We confirmed Row_ID now writes correctly and single-record edits work. SET-ER edit has NOT been retested yet with v1.8.112 + new Apps Script.
+- Once confirmed working, remove debug logging from Apps Script and redeploy.
 
----
-
-### 🔵 NEXT SESSION ACTION PLAN (do in this order)
-
-#### Step 1: Add debug logging to Apps Script (5 minutes, zero risk)
-Add a Debug sheet tab. In `doPost`, before processing any action, write the full incoming payload to the Debug sheet:
-
-```javascript
-// Add at top of doPost try block, before any action processing:
-try {
-  var debugSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Debug');
-  if (!debugSheet) debugSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Debug');
-  debugSheet.appendRow([new Date().toISOString(), e.postData.contents]);
-} catch(de) {}
-```
-
-Re-deploy Apps Script after adding this. Then reproduce the bug and immediately check the Debug sheet to see:
-- How many rows were written (1 or 2 POSTs?)
-- What `_rowId`, `type`, `packagingSKU` values were sent
-- Whether the payload contains SET-ER or SET-PD data
-
-This will definitively tell us the root cause.
-
-#### Step 2: Based on debug findings, fix accordingly
-**If two POSTs are firing:** find what's triggering the second one and remove it.
-
-**If one POST with wrong data:** fix the form field collection in `saveRecord()` -- the `rec` object may be picking up stale DOM values.
-
-**If correct POST but wrong row updated:** fix Apps Script row lookup logic.
-
-#### Step 3: Client-side UUID generation (eliminates rowId gap, do regardless of Step 2 findings)
-Instead of Apps Script generating the Row_ID on append, generate it client-side and send it in the payload. Apps Script writes whatever rowId it receives. This means the app has the rowId immediately after append -- no Refresh needed before editing.
-
-In the inventory app, change the append path in `saveRecord()`:
-```javascript
-// Generate UUID client-side before append
-rec.rowId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-  var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-  return v.toString(16);
-});
-```
-
-Then store it on the in-memory record after append:
-```javascript
-rec._id = Date.now();
-// rowId already set above -- store it on the record
-```
-
-In Apps Script `doPost` append branch, change:
-```javascript
-data.rowId = generateUUID(); // REMOVE THIS
-// Just use whatever data.rowId was sent -- client generated it
-```
-
-Zero risk -- no CORS changes, no new deployment behavior. Just moves UUID generation from server to client.
-
-#### Step 4: Remove the rowId block (v1.8.109)
-Once Step 3 is done, the block that prevents editing newly added records is no longer needed -- remove it.
+**Next session action plan:**
+1. Upload v1.8.112 HTML to GitHub, deploy new Apps Script
+2. Add a test SET (SET-PD + SET-ER), hit Refresh, edit the SET-ER and save
+3. Check the Debug sheet -- confirm only ONE POST fired with correct Row_ID and SET-ER data
+4. Check the Google Sheet -- confirm only the SET-ER row was updated
+5. If clean: remove debug logging from Apps Script, redeploy, done
+6. If still broken: paste Debug sheet rows here and we diagnose
 
 ---
 
@@ -121,20 +72,20 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By
 | Findings_SKUs_Published | 1709919881 | Chain/hardware options — read only |
 | Abbreviations_Published | 1879145246 | Type/shape/finish/color/material abbrevs — read + write |
 
-**Listings_Published columns (0-indexed, as of v45):**
+**Listings_Published columns (as of this session, 40 columns):**
 ```
-0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Characters
-5:Object Description  6:Wide x Height  7:Material  8:Chain Or Hardware
-9:Chain Or Drop Length  10:Chain/Bead/Clasp Details  11:Extension Chain
-12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
-17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
-22:ETSY ListingID  23:ETSY SKU  24:ETSY Title  25:ETSY Status  26:ETSY Price
-27:ETSY URL  28:Update Templates  29:Template - Title Custom Intro
-30:Template - Components Necklace Length Options  31:Template - Combined
-32:Template - Tags  35:Added_Timestamp  36:Row_ID  37:API_Edit
+Type, Shape, Packaging SKU, New ETSY SKU, Characters, Object Description,
+Wide x Height, Material, Chain Or Hardware, Chain Or Drop Length,
+Chain/Bead/Clasp Details, Extension Chain, Chain Length Config, Finish,
+Colors, Charm, Double Sided, Gift Box, Added To Etsy, Jump Rings,
+Jump Rings Qty, Old SKU, Previous ETSY ListingID, ETSY ListingID, ETSY SKU,
+ETSY Title, ETSY Status, ETSY Price, ETSY URL, Template - Title Custom Intro,
+Template - Components Necklace Length Options, Template - Combined,
+Template - Tags, Current Tags, Listing Output, Added_Timestamp, Row_ID,
+API_Edit, EtsySync_Timestamp, EtsySync_UpdatedTimestamp
 ```
 
-**Note:** Column structure shifted when Template - Combined added at col 31. COL_MAP uses header name lookup so handled automatically.
+**Note:** Apps Script now reads headers at runtime -- column position changes no longer break anything.
 
 **Abbreviations_Published notes:**
 - `Colors` column: 32 color entries (format: `ABBR = Full Name`)
@@ -152,27 +103,21 @@ All POSTed as JSON with `Content-Type: text/plain` and `mode: no-cors`.
 
 | Action | Description |
 |--------|-------------|
-| `append` | Add new row. Sets Added_Timestamp, addedToEtsy=NOT LISTED, generates Row_ID UUID, sets API_Edit |
-| `update` | Update row by Row_ID (falls back to PKG SKU + Object Description, then PKG SKU + Type) |
+| `append` | Add new row. Reads sheet headers at runtime. Sets Added_Timestamp, addedToEtsy=NOT LISTED, generates Row_ID UUID, sets API_Edit. |
+| `update` | Update row by Row_ID (falls back to PKG SKU + Object Description, then PKG SKU + Type + Shape) |
 | `updateSKU` | Update Packaging SKU + New ETSY SKU on ALL rows matching _oldPackagingSKU |
 | `addFinishAbbr` | Append new finish abbreviation to Abbreviations_Published (on Save only) |
 
-### Pending Apps Script changes (not yet deployed)
-1. Debug logging (Step 1 above) -- add before next bug reproduction
-2. Type-based fallback in update action:
-```javascript
-if (targetRow === -1 && data._originalType) {
-  var typeIdx = headers.indexOf('Type');
-  for (var i3 = 1; i3 < allData.length; i3++) {
-    if (String(allData[i3][pkgIdx]).trim() === String(data.packagingSKU).trim() &&
-        String(allData[i3][typeIdx]).trim() === String(data._originalType).trim()) {
-      targetRow = i3 + 1;
-      break;
-    }
-  }
-}
-```
-3. Client-side UUID: remove `data.rowId = generateUUID()` from append branch -- use client-sent rowId instead
+**Update payload fields sent by client:**
+- `_action`: 'update'
+- `_rowId`: UUID from in-memory record (primary lookup)
+- `_originalDescription`: objectDescription at edit-open time (fallback 1)
+- `_originalType`: type at edit-open time (fallback 2)
+- `_originalShape`: shape at edit-open time (fallback 2, combined with type)
+- `objectDescription`: preserved from original record (not from form)
+
+### Pending Apps Script changes
+- Remove debug logging once SET sibling edit is confirmed working
 
 ---
 
@@ -223,7 +168,7 @@ Row order:
 6. Colors (tag-input)
 7. Charm · Double Sided · Gift Box
 
-Object Description: hidden field (not shown, value preserved on edit)
+**Object Description:** NOT in the form. Value is preserved from in-memory record on edit, blank on new adds. Still stored in sheet and shown in detail view.
 
 ### Shape Autocomplete
 - startsWith matching against shapeAbbrevMap keys
@@ -272,9 +217,10 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 ## To-Do / Pending
 
-### 🔴 SET sibling edit bug (HIGH PRIORITY -- see top of file)
+### 🟡 Confirm SET sibling edit bug fully resolved (see Active Work above)
 ### Mobile JS single-pane navigation (CSS done, JS pending)
 ### Run Templates integration (deferred -- see previous sessions for option 2 CORS details)
+### Existing rows with blank Row_ID need UUIDs manually pasted in sheet (one-time cleanup)
 
 ---
 
@@ -293,7 +239,10 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 | Finish sort hardcoded ORDER | finishOptions-derived sort unreliable when CSV stale |
 | addFinishAbbr on Save only | Partial combos caused bad data |
 | Old SKU excluded from search | False positives on ER records |
-| Object Description hidden | Removed from form, not reliable as key for SETs |
+| Object Description removed from form | Not reliable as lookup key for SETs; too many duplicates |
+| Object Description preserved on save | Still stored in sheet, shown in detail view, used in search |
+| Apps Script append uses runtime headers | Hardcoded HEADERS array caused Row_ID to write to wrong column when sheet columns changed |
+| Third fallback: PKG SKU + Type + Shape | More unique than Type alone; _originalShape captured at edit-open time |
 | Template Runner separate | Keep in Google Sheets sidebar |
 
 ---
@@ -302,6 +251,9 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 | Version | Change |
 |---------|--------|
+| v1.8.112 | Object Description removed from form; _originalShape added to update payload |
+| v1.8.111 | (internal -- skipped in delivery) |
+| v1.8.110 | (internal -- skipped in delivery) |
 | v1.8.109 | Block edit save if record has no rowId |
 | v1.8.108 | Fix isRefresh not defined in buildData |
 | v1.8.107 | Clear localStorage addedRecords on Refresh |
@@ -339,9 +291,17 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 ---
 
+## Apps Script — current functions (production)
+Only three functions in the script. No test/debug functions.
+- `generateUUID()` -- generates UUID v4
+- `doPost(e)` -- handles append, update, updateSKU, addFinishAbbr actions
+- `doGet(e)` -- health check endpoint
+
+---
+
 ## How to Resume in a New Session
 
 1. Tell Claude: "Continue work on the Jewelry Inventory app"
 2. Claude fetches: `https://raw.githubusercontent.com/jewelrybyjeralynn/jewelry-inventory/main/PROJECT_jewelryinventoryapi.md`
 3. Upload current `JewelryInventory.html` for code changes
-4. **Start with the ACTIVE BUG section and follow the Next Session Action Plan**
+4. **Start with the ACTIVE WORK section**
