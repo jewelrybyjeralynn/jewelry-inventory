@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.115';
+const APP_VERSION = 'v1.8.116';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -977,7 +977,7 @@ const FIELDS=[
   {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
-  {key:'chain',label:'Chain Or Hardware',type:'chain'},
+  {key:'chain',label:'Chain Or Hardware',type:'chain',third:true},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Minor','Major','None'],necklaceOnly:true,third:true},
   {key:'maxLength',label:'Max Length',type:'checkbox',third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads, triangle frame, connectors, charms',full:true},
@@ -1063,7 +1063,7 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || fullName===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.third?'':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='multifinish') {
       // Normalize stored finish to canonical order before rendering checkboxes
@@ -1146,7 +1146,7 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.third?'':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='shape') {
       return `<div class="fg" style="${f.third?'':'grid-column:span 2'}">
@@ -1170,7 +1170,7 @@ function buildForm(rec, lockedKeys) {
         const o = chainOptions.find(o => o.sku === v);
         return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
       })() : '';
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}">
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.third?'':'grid-column:span 2'}">
         <label>${f.label}</label>
         <div class="combo-wrap">
           <input type="text" id="f_${f.key}_display" value="${displayVal}" placeholder="Type to search chains..."
@@ -1187,7 +1187,7 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='checkbox') {
       const checked = v === 'Yes';
-      return `<div class="fg" style="display:flex;align-items:center;gap:8px;padding-top:18px"><input type="checkbox" id="f_${f.key}" ${checked?'checked':''} style="width:16px;height:16px;accent-color:var(--copper);cursor:pointer"><label for="f_${f.key}" style="margin:0;cursor:pointer">${f.label}</label></div>`;
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.third?'':'grid-column:span 2'}"><label>${f.label}</label><div style="display:flex;align-items:center;gap:8px;padding-top:4px"><input type="checkbox" id="f_${f.key}" ${checked?'checked':''} style="width:16px;height:16px;accent-color:var(--copper);cursor:pointer"></div></div>`;
     }
     if (f.type==='sel') {
       const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
