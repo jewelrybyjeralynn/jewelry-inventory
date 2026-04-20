@@ -89,6 +89,8 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.125 Chain/Bead/Clasp Details placeholder: added [bead sku] to hint text
+v1.8.124 Sort dropdown in list pane: Default / Recently Edited / Least Recently Edited (by API_Edit, siblings grouped by max)
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
 v1.8.80  Left pane component rows show Type plain name instead of abbreviation
 v1.8.92  Run Templates button in Reference section calls Apps Script and refreshes detail view
@@ -438,7 +440,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   </header>
   <div class="main">
     <div class="list-pane">
-      <div class="list-hdr"><span id="listCount"></span><span style="color:var(--text-muted);font-size:10px">click to view</span></div>
+      <div class="list-hdr"><span id="listCount"></span><div style="display:flex;align-items:center;gap:6px"><label style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Sort</label><select id="listSortSelect" style="font-size:10px;padding:3px 5px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim)" onchange="setListSort(this.value)"><option value="default">Default</option><option value="recent">Recently Edited</option><option value="oldest">Least Recently Edited</option></select></div></div>
       <div class="list-scroll" id="listScroll"></div>
     </div>
     <div class="detail-pane" id="detailPane">
@@ -458,7 +460,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.123';
+const APP_VERSION = 'v1.8.125';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -510,7 +512,7 @@ const COL_MAP = {
   'Published_Update_Timestamp':'publishedTimestamp'
 };
 
-let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null;
+let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null, listSort='default';
 
 function normalizeHeader(h) {
   return String(h||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();
@@ -790,6 +792,8 @@ document.addEventListener('click', e=>{
   }
 });
 
+function setListSort(val) { listSort = val; selectedIdx = null; render(); }
+
 // RENDER
 function render() {
   const q = document.getElementById('search').value.toLowerCase().trim();
@@ -833,6 +837,20 @@ function render() {
   });
 
   document.getElementById('listCount').textContent = `${filtered.length} of ${data.length}`;
+
+  // Sort filtered list
+  if (listSort !== 'default') {
+    // For each group, get the max apiEdit timestamp among siblings (blank = epoch 0)
+    const groupTs = r => {
+      const sibs = r._siblings || [r];
+      const ts = sibs.map(s => s.apiEdit ? new Date(s.apiEdit).getTime() : 0);
+      return Math.max(...ts);
+    };
+    filtered = [...filtered].sort((a, b) => {
+      const ta = groupTs(a), tb = groupTs(b);
+      return listSort === 'recent' ? tb - ta : ta - tb;
+    });
+  }
 
   const list = document.getElementById('listScroll');
   if (!filtered.length) { list.innerHTML='<div class="no-res">No matching SKUs</div>'; return; }
@@ -976,7 +994,7 @@ const FIELDS=[
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
-  {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads, triangle frame, connectors, charms',full:true},
+  {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], triangle frame, connectors, charms',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
