@@ -14,7 +14,6 @@ const KEY_MAP = {
   'Chain/Bead/Clasp Details': 'chainDetail',
   'Extension Chain': 'extChainOption',
   'Chain Length Config': 'chainConfig',
-  'Max Length': 'maxLength',
   'Finish': 'finish',
   'Colors': 'pieceColors',
   'Charm': 'charm',
