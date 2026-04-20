@@ -74,7 +74,7 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By
 | Findings_SKUs_Published | 1709919881 | Chain/hardware options — read only |
 | Abbreviations_Published | 1879145246 | Type/shape/finish/color/material abbrevs — read + write |
 
-**Listings_Published columns (as of v1.8.119, 39 columns):**
+**Listings_Published columns (as of v1.8.119, 41 columns):**
 ```
 0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Characters
 5:Object Description  6:Wide x Height  7:Material  8:Chain Or Hardware
@@ -86,9 +86,14 @@ https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By
 30:Template - Components Necklace Length Options  31:Template - Combined
 32:Template - Tags  33:Current Tags  34:Listing Output  35:Added_Timestamp
 36:Row_ID  37:API_Edit  38:EtsySync_Timestamp  39:EtsySync_UpdatedTimestamp
+40:Template_Executed
 ```
 
+**Template_Executed:** Used by the external template runner process. Not written or read by the inventory app.
+
 **Note:** Apps Script reads headers at runtime -- column position changes no longer break anything.
+
+**Data analysis note:** Exclude rows where Added To Etsy = SOLD. Those pieces are gone, data won't be maintained.
 
 **Abbreviations_Published notes:**
 - Colors column: 32 color entries (format: ABBR = Full Name)
@@ -234,6 +239,10 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 ### Confirm SET sibling edit bug fully resolved (see Active Work above)
 ### Delete FLMMTTRES from Abbreviations_Published (one-time manual cleanup)
 ### Existing rows with blank Row_ID need UUIDs manually pasted in sheet (one-time cleanup)
+### SKU uniqueness check on Save (client-side)
+- On Save (both new add and edit), before posting to Apps Script, scan in-memory data for any row where Packaging SKU or New ETSY SKU matches the value being saved AND that row belongs to a different packaging group (i.e., different sibling cluster -- not sharing the same PKG SKU)
+- If collision found: block save, show inline warning identifying the conflicting SKU
+- No server-side check needed -- solo user, in-memory data is authoritative for the session
 ### Mobile JS single-pane navigation (CSS done, JS pending)
 ### Run Templates integration (deferred -- see previous sessions for option 2 CORS details)
 
@@ -261,6 +270,7 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 | updateSKU on edit PKG SKU change | Previously only fired on new SET component add |
 | getFinishAbbr normalized lookup | Strips redundant (Front) to match existing abbrevs like FMFR before falling back to concatenation |
 | Chain Length Config includes Max Length variants | Standard/Minor/Major each have & Max Length option instead of separate column |
+| SKU uniqueness check client-side only | Solo user; in-memory data authoritative for session; no-cors blocks server response anyway |
 | Template Runner separate | Keep in Google Sheets sidebar |
 
 ---
