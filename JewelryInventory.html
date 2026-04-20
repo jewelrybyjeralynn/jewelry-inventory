@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.112';
+const APP_VERSION = 'v1.8.113';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1176,6 +1176,7 @@ function buildForm(rec, lockedKeys) {
             autocomplete="off"
             oninput="filterChainList(this.value)"
             onfocus="openChainList()"
+            onkeydown="chainKeydown(event)"
             onblur="setTimeout(()=>closeChainList(),200)"
             ${chainDisabled?'disabled style="opacity:0.5;cursor:not-allowed"':''}>
           <input type="hidden" id="f_${f.key}" value="${v}">
@@ -1417,6 +1418,31 @@ function renderChainList(filtered) {
   list.classList.add('open');
 }
 
+let chainActiveIdx = -1;
+
+function chainKeydown(e) {
+  const list = document.getElementById('chainComboList');
+  const items = list ? [...list.querySelectorAll('.combo-opt')] : [];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    chainActiveIdx = Math.min(chainActiveIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === chainActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    chainActiveIdx = Math.max(chainActiveIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('active', i === chainActiveIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (chainActiveIdx >= 0 && items[chainActiveIdx]) {
+      items[chainActiveIdx].dispatchEvent(new MouseEvent('mousedown'));
+    } else if (items.length === 1) {
+      items[0].dispatchEvent(new MouseEvent('mousedown'));
+    }
+  } else if (e.key === 'Escape') {
+    closeChainList();
+  }
+}
+
 let shapeActiveIdx = -1;
 
 function shapeKeydown(e) {
@@ -1475,6 +1501,7 @@ function selectShape(name) {
 }
 
 function filterChainList(q) {
+  chainActiveIdx = -1;
   const typeVal = (document.getElementById('f_type')||{}).value || '';
   const pool = getChainOptionsForType(typeVal);
   if (pool === null) return; // disabled
