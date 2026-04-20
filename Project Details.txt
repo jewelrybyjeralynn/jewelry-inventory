@@ -1,8 +1,9 @@
-Project Names:
-Jewelry Inventory App — or if you want a short handle for it: JewelryInventoryAPI (which is what the project notes file is named).
+Project Names: Jewelry Inventory App — or if you want a short handle for it: JewelryInventoryAPI (which is what the project notes file is named).
 
-Going forward: at the start of a new conversation, either upload the JewelryInventory.html file (I'll read the comment block) or just mention the project and I'll pull from memory. 
-The comment block covers everything needed to pick up mid-stream.
 
-Tell Claude to check the project notes:
-https://raw.githubusercontent.com/jewelrybyjeralynn/jewelry-inventory/main/PROJECT_jewelryinventoryapi.md
+How to Resume in a New Session
+
+Tell Claude: "Continue work on the Jewelry Inventory app"
+Claude fetches: https://raw.githubusercontent.com/jewelrybyjeralynn/jewelry-inventory/main/PROJECT_jewelryinventoryapi.md
+Upload current JewelryInventory.html for code changes (The comment block covers everything needed to pick up mid-stream.)
+Start with the ACTIVE WORK section
