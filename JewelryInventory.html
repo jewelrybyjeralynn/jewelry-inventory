@@ -458,7 +458,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.122';
+const APP_VERSION = 'v1.8.123';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1070,12 +1070,16 @@ function buildForm(rec, lockedKeys) {
       let frontChecked = [], backChecked = [], sameChecked = [];
       if (finishVal) {
         if (isFB) {
+          // Convention: unannotated parts that appear before a (Front) marker are front-only.
+          // e.g. "Flame & Matte(Front) & Resin(Back)" -> Flame=front, Matte=front, Resin=back
+          const hasFrontMarker = finishVal.includes('(Front)');
           finishVal.split('&').forEach(part => {
             const p = part.trim();
             const name = p.replace(/\(Front\)|\(Back\)/g,'').trim();
             if (p.includes('(Front)')) frontChecked.push(name);
             else if (p.includes('(Back)')) backChecked.push(name);
-            else { frontChecked.push(name); backChecked.push(name); }
+            else if (hasFrontMarker) { frontChecked.push(name); } // front-only by convention
+            else { frontChecked.push(name); backChecked.push(name); } // truly both sides
           });
         } else {
           sameChecked = finishVal.split('&').map(p=>p.trim()).filter(Boolean);
@@ -1595,9 +1599,14 @@ function normalizeFinishName(fullName) {
 function buildFinishFullName(sameArr, frontArr, backArr) {
   const sortByTable = arr => sortFinishParts(arr);
   if (frontArr.length || backArr.length) {
-    // Front/back mode — sort each group independently
+    // Front/back mode: only the LAST front item gets (Front) annotation.
+    // e.g. [Flame, Matte] front + [Resin] back = Flame & Matte(Front) & Resin(Back)
+    // This matches Abbreviations_Published convention (e.g. FMFR).
     const parts = [];
-    sortByTable(frontArr).forEach(f => parts.push(`${f}(Front)`));
+    const sortedFront = sortByTable(frontArr);
+    sortedFront.forEach((f, i) => {
+      parts.push(i === sortedFront.length - 1 ? `${f}(Front)` : f);
+    });
     sortByTable(backArr).forEach(b => parts.push(`${b}(Back)`));
     return parts.join(' & ');
   }
