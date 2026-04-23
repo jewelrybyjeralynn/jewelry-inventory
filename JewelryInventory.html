@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.133 Fix filterBar mobile visibility -- JS explicitly sets display:none on mobile load; toggleMobFilters uses inline style
 v1.8.132 Fix filterBar showing on mobile -- default display:none, desktop display:flex via min-width:701px query; eliminates cascade conflict
 v1.8.131 Remove mob-add-btn from header -- Add SKU already in filter drawer; remove dead CSS
 v1.8.130 Fix filter drawer open on mobile load -- #filterBar now ID-only, no class conflict with .filters desktop rule; Add SKU margin reset in drawer
@@ -462,7 +463,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.132';
+const APP_VERSION = 'v1.8.133';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -712,6 +713,10 @@ async function loadFromSheets(isRefresh) {
 
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('appScreen').style.display='flex';
+    // Explicitly hide filterBar on mobile -- CSS media query alone unreliable with JS inline styles
+    if (window.matchMedia('(max-width:700px)').matches) {
+      document.getElementById('filterBar').style.display='none';
+    }
     document.getElementById('appVersion').textContent = APP_VERSION;
     selectedIdx = null;
     if (!isRefresh) {
@@ -797,8 +802,10 @@ document.addEventListener('click', e=>{
 function toggleMobFilters() {
   const bar = document.getElementById('filterBar');
   const btn = document.getElementById('mobFilterBtn');
+  const isOpen = bar.classList.contains('open');
   bar.classList.toggle('open');
-  btn.classList.toggle('active-filter', bar.classList.contains('open'));
+  bar.style.display = isOpen ? 'none' : 'flex';
+  btn.classList.toggle('active-filter', !isOpen);
 }
 
 function setListSort(val) { listSort = val; selectedIdx = null; render(); }
