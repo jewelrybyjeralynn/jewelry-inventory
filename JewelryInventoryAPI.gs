@@ -58,15 +58,6 @@ function doPost(e) {
   var output = ContentService.createTextOutput();
   output.setMimeType(ContentService.MimeType.JSON);
   try {
-
-    // DEBUG LOGGING -- remove after bug is fixed
-    try {
-      var debugSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Debug');
-      if (!debugSheet) debugSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Debug');
-      debugSheet.appendRow([new Date().toISOString(), e.postData.contents]);
-    } catch(de) {}
-    // END DEBUG
-
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     var data = JSON.parse(e.postData.contents);
     var now = new Date().toISOString();
@@ -198,4 +189,3 @@ function doGet(e) {
     .createTextOutput(JSON.stringify({status: 'ok', message: 'Jewelry Inventory API running'}))
     .setMimeType(ContentService.MimeType.JSON);
 }
-

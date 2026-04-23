@@ -42,34 +42,13 @@
 - `fgrid` 2-col layout at 393px is fine, no change needed
 - `sku-desc` ellipsis already correct, no change needed
 
-### SET sibling edit bug — status as of v1.8.119
+### ~~SET sibling edit bug~~ -- FULLY RESOLVED
 
-**Original symptom:** Editing a SET-ER overwrote both SET-PD and SET-ER rows with SET-ER data.
+SET sibling edit confirmed clean. Debug logging removed from Apps Script, redeployed. Debug sheet in spreadsheet can be deleted.
 
-**Root cause found and fixed:**
-Apps Script append used a hardcoded HEADERS array (36 columns) out of sync with the actual sheet (39 columns). Row_ID and API_Edit wrote to wrong columns on every append. Records had blank Row_ID, so all fallback lookups were unreliable for SETs.
-
-**All fixes deployed:**
-1. Apps Script append now reads actual sheet headers at runtime
-2. Third fallback: PKG SKU + Type + Shape (sends _originalShape captured at edit-open)
-3. Object Description removed from form; preserved from in-memory record on save
-4. updateSKU now fires on edit when PKG SKU changes (was new-add only)
-5. Debug logging still present in Apps Script -- remove after confirming SET edit is fully clean
-
-**What still needs verification:**
-- Full SET sibling edit end-to-end with current code. Single-record edits confirmed working. SET-ER edit not yet retested after all fixes.
-- Once confirmed: remove debug logging from Apps Script, redeploy.
-
-**Next session action plan:**
-1. Add a test SET (SET-PD + SET-ER), Refresh, edit the SET-ER and save
-2. Check Debug sheet -- confirm one POST, correct Row_ID, SET-ER data only
-3. Check sheet -- confirm only SET-ER row updated
-4. If clean: remove debug logging, redeploy Apps Script, done
-5. If broken: paste Debug sheet rows and diagnose
-
-### One-time sheet cleanup needed
-- Delete FLMMTTRES entry from Abbreviations_Published (bad abbrev written before getFinishAbbr fix)
-- Existing rows with blank Row_ID need UUIDs manually pasted in sheet
+### ~~One-time sheet cleanup~~ -- DONE
+- ~~Delete FLMMTTRES entry from Abbreviations_Published~~ -- done
+- ~~Existing rows with blank Row_ID need UUIDs manually pasted in sheet~~ -- done
 
 ---
 
@@ -156,9 +135,6 @@ All POSTed as JSON with Content-Type: text/plain and mode: no-cors.
 - generateUUID() -- generates UUID v4
 - doPost(e) -- handles all actions
 - doGet(e) -- health check
-
-### Pending Apps Script changes
-- Remove debug logging once SET sibling edit confirmed working
 
 ---
 
@@ -263,9 +239,9 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 ## To-Do / Pending
 
-### Confirm SET sibling edit bug fully resolved (see Active Work above)
-### Delete FLMMTTRES from Abbreviations_Published (one-time manual cleanup)
-### Existing rows with blank Row_ID need UUIDs manually pasted in sheet (one-time cleanup)
+### ~~Confirm SET sibling edit bug fully resolved~~ -- DONE (Apps Script debug logging removed, redeployed)
+### ~~Delete FLMMTTRES from Abbreviations_Published~~ -- DONE
+### ~~Existing rows with blank Row_ID need UUIDs manually pasted in sheet~~ -- DONE
 ### SKU uniqueness check on Save (client-side)
 - On Save (both new add and edit), before posting to Apps Script, scan in-memory data for any row where Packaging SKU or New ETSY SKU matches the value being saved AND that row belongs to a different packaging group (i.e., different sibling cluster -- not sharing the same PKG SKU)
 - If collision found: block save, show inline warning identifying the conflicting SKU
