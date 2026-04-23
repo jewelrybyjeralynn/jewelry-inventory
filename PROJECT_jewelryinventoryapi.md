@@ -9,7 +9,7 @@
 ---
 
 ## Current Version
-**v1.8.139** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
+**v1.8.145** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
 
 ---
 
@@ -242,10 +242,7 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 ### ~~Confirm SET sibling edit bug fully resolved~~ -- DONE (Apps Script debug logging removed, redeployed)
 ### ~~Delete FLMMTTRES from Abbreviations_Published~~ -- DONE
 ### ~~Existing rows with blank Row_ID need UUIDs manually pasted in sheet~~ -- DONE
-### SKU uniqueness check on Save (client-side)
-- On Save (both new add and edit), before posting to Apps Script, scan in-memory data for any row where Packaging SKU or New ETSY SKU matches the value being saved AND that row belongs to a different packaging group (i.e., different sibling cluster -- not sharing the same PKG SKU)
-- If collision found: block save, show inline warning identifying the conflicting SKU
-- No server-side check needed -- solo user, in-memory data is authoritative for the session
+### ~~SKU uniqueness check on Save (client-side)~~ -- DONE (v1.8.140)
 ### Mobile Phase 1: single-pane navigation -- DONE (v1.8.126)
 ### Mobile Phase 2: filter drawer -- DONE (v1.8.134)
 ### Mobile Phase 3: modal usability -- DONE (v1.8.138)
@@ -285,6 +282,12 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 | Version | Change |
 |---------|--------|
+| v1.8.145 | Fix desktop list item layout -- mobile uses flex+order to stack badge last; desktop grid restored |
+| v1.8.144 | Mobile: hide Sort label, cap sort dropdown width to stop list header clipping |
+| v1.8.143 | Mobile: status badge moved to third row -- SKU name, description, then badge |
+| v1.8.142 | Mobile: version number moved to list pane header |
+| v1.8.141 | Mobile: status badge stacks below SKU name; version number hidden on mobile (reverted next version) |
+| v1.8.140 | SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group |
 | v1.8.139 | Mobile phase 4: toast bottom offset 80px on mobile to clear Safari toolbar |
 | v1.8.138 | ms-btn max-width:220px + text-overflow:ellipsis; det-actions wrap on mobile |
 | v1.8.137 | Widen Etsy Status button; det-actions wrap on mobile so Edit visible |
