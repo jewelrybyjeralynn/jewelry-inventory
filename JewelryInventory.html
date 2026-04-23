@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.138 ms-btn: add max-width:220px + text-overflow:ellipsis so long filter labels truncate instead of overflowing
 v1.8.137 Widen Etsy Status button to fit No Listing; det-actions wrap on mobile so Edit button is visible
 v1.8.136 Fix detail view cut off on iOS Safari -- appScreen and body use -webkit-fill-available for height
 v1.8.135 Mobile phase 3: modal height uses -webkit-fill-available to fix iOS Safari 100vh browser chrome overlap
@@ -304,7 +305,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 
   /* Multi-select checkbox filter */
   .ms-wrap{display:flex;flex-direction:column;gap:3px;position:relative;}
-  .ms-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 24px 6px 8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;text-align:left;position:relative;min-width:140px;}
+  .ms-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 24px 6px 8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;text-align:left;position:relative;min-width:140px;max-width:220px;overflow:hidden;text-overflow:ellipsis;}
   .ms-btn:after{content:'▾';position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:10px;}
   .ms-btn.active-filter{border-color:var(--copper);color:var(--copper);}
   .ms-panel{position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);z-index:150;min-width:160px;display:none;flex-direction:column;margin-top:2px;}
@@ -469,7 +470,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.137';
+const APP_VERSION = 'v1.8.138';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
