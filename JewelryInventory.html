@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.140 SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group
 v1.8.139 Mobile phase 4: toast bottom offset increased to 80px on mobile to clear Safari toolbar
 v1.8.138 ms-btn: add max-width:220px + text-overflow:ellipsis so long filter labels truncate instead of overflowing
 v1.8.137 Widen Etsy Status button to fit No Listing; det-actions wrap on mobile so Edit button is visible
@@ -472,7 +473,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.139';
+const APP_VERSION = 'v1.8.140';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1950,6 +1951,42 @@ async function saveRecord() {
     rec[f.key]=el?el.value.trim():'';
   });
   if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
+
+  // SKU uniqueness check -- block if PKG SKU or New ETSY SKU already used by a different group
+  {
+    // Determine IDs belonging to the current sibling group (these are allowed to share the SKU)
+    let currentGroupIds = new Set();
+    if (editingId !== null) {
+      // Edit mode -- find sibling group of the record being edited
+      for (const r of data) {
+        if (r._siblings) {
+          if (r._siblings.some(s => s._id === editingId)) {
+            r._siblings.forEach(s => currentGroupIds.add(s._id));
+            break;
+          }
+        }
+        if (r._id === editingId) { currentGroupIds.add(r._id); break; }
+      }
+    } else if (window.__addComponentParentId) {
+      // Add component mode -- find parent's sibling group
+      const parent = data.find(r => r._id === window.__addComponentParentId);
+      if (parent) (parent._siblings || [parent]).forEach(s => currentGroupIds.add(s._id));
+    }
+    // Scan all records for collisions
+    for (const r of data) {
+      const allSibs = r._siblings || [r];
+      const isCurrentGroup = allSibs.some(s => currentGroupIds.has(s._id));
+      if (isCurrentGroup) continue;
+      if (r.packagingSKU && r.packagingSKU === rec.packagingSKU) {
+        alert(`⚠️ Packaging SKU "${rec.packagingSKU}" is already used by a different SKU. Please choose a unique name.`);
+        return;
+      }
+      if (rec.newEtsySKU && r.newEtsySKU && r.newEtsySKU === rec.newEtsySKU) {
+        alert(`⚠️ New Etsy SKU "${rec.newEtsySKU}" is already used by "${r.packagingSKU}". Please choose a unique name.`);
+        return;
+      }
+    }
+  }
 
   // Block save if adding a non-PD set component without a PD sibling
   if (editingId === null && isSetType(rec.type||'') && !(rec.type||'').includes('-PD') && window.__addComponentParentId) {
