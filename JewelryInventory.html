@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.131 Remove mob-add-btn from header -- Add SKU already in filter drawer; remove dead CSS
 v1.8.130 Fix filter drawer open on mobile load -- #filterBar now ID-only, no class conflict with .filters desktop rule; Add SKU margin reset in drawer
 v1.8.129 Fix duplicate Add SKU on desktop -- mob-add-btn missing display:none in default styles
 v1.8.128 Filter bar: Add SKU pushed right with margin-left:auto; left padding aligned with header
@@ -336,7 +337,6 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .mob-back{display:none;}
   .mob-filter-btn{display:none;}
   .mob-filter-drawer{display:none;}
-  .mob-add-btn{display:none;}
 
   @media(max-width:700px){
     header{flex-wrap:wrap;gap:8px;padding:9px 12px;}
@@ -345,7 +345,6 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     #filterBar{display:none;flex-direction:column;gap:8px;padding:10px 12px;align-items:flex-start;background:var(--surface);border-bottom:1px solid var(--border);}
     .mob-filter-btn{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;}
     .mob-filter-btn.active-filter{border-color:var(--copper);color:var(--copper);}
-    .mob-add-btn{background:var(--copper);color:var(--bg);border:none;padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;display:block;}
     #filterBar.open{display:flex;}
     #filterBar .ms-wrap{position:static;}
     #filterBar .ms-panel{position:static;display:none;margin-top:0;border:none;background:transparent;padding-left:8px;}
@@ -395,7 +394,6 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     </div>
     <!-- Mobile-only buttons -->
     <button class="mob-filter-btn" id="mobFilterBtn" onclick="toggleMobFilters()">⚙ Filters</button>
-    <button class="mob-add-btn" onclick="openAddModal()">+ Add SKU</button>
   </header>
   <div id="filterBar">
       <div class="ms-wrap">
@@ -462,7 +460,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.130';
+const APP_VERSION = 'v1.8.131';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
