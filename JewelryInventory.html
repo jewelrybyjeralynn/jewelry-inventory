@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.145 Fix desktop list item -- mobile uses flex+order to stack badge last; desktop grid restored
 v1.8.144 Mobile: hide Sort label, cap sort dropdown width to stop list header clipping on right
 v1.8.143 Mobile: status badge moved to third row -- SKU name, description, then badge
 v1.8.142 Mobile: version number moved to list pane header instead of hidden
@@ -378,9 +379,11 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 
     #sortLabel{display:none;}
     #listSortSelect{max-width:90px;}
-    /* List item -- stack badge below name on mobile */
-    .sku-item{grid-template-columns:1fr;grid-template-rows:auto auto auto;}
-    .sb{align-self:start;justify-self:start;margin-top:2px;}
+    /* List item -- stack on mobile using flex+order, desktop keeps grid */
+    .sku-item{display:flex;flex-direction:column;}
+    .sku-name{order:1;}
+    .sku-desc{order:2;white-space:normal;}
+    .sb{order:3;align-self:flex-start;margin-top:3px;width:auto;}
     .det-title{flex-wrap:wrap;}
     .det-actions{flex-wrap:wrap;flex-shrink:1;}
     .mob-back{display:flex;align-items:center;gap:7px;background:none;border:none;border-bottom:1px solid var(--border);color:var(--copper);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;padding:9px 13px;flex-shrink:0;width:100%;text-align:left;}
@@ -484,7 +487,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.144';
+const APP_VERSION = 'v1.8.145';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -907,8 +910,8 @@ function render() {
     const descHtml = descs.map(d=>`<div class="sku-desc">${d}</div>`).join('');
     return `<div class="sku-item ${active?'active':''}" onclick="selectItem(${i})" ondblclick="openEditModal(filtered[${i}]._id)">
       <div class="sku-name">${r.packagingSKU}</div>
-      ${descHtml}
       <div class="sb s${sc||'none'}">${st||r.addedToEtsy||'—'}</div>
+      ${descHtml}
     </div>`;
   }).join('');
 }
