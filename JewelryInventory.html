@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.132 Fix filterBar showing on mobile -- default display:none, desktop display:flex via min-width:701px query; eliminates cascade conflict
 v1.8.131 Remove mob-add-btn from header -- Add SKU already in filter drawer; remove dead CSS
 v1.8.130 Fix filter drawer open on mobile load -- #filterBar now ID-only, no class conflict with .filters desktop rule; Add SKU margin reset in drawer
 v1.8.129 Fix duplicate Add SKU on desktop -- mob-add-btn missing display:none in default styles
@@ -217,7 +218,8 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   #search:focus{border-color:var(--copper);}
   #search::placeholder{color:var(--text-muted);}
   .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
-  #filterBar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:6px 18px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+  #filterBar{display:none;gap:7px;align-items:center;flex-wrap:wrap;padding:6px 18px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+  @media(min-width:701px){#filterBar{display:flex;}}
   .filter-wrap{display:flex;flex-direction:column;gap:3px;}
   .filter-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
   select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;}
@@ -460,7 +462,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.131';
+const APP_VERSION = 'v1.8.132';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
