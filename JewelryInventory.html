@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.139 Mobile phase 4: toast bottom offset increased to 80px on mobile to clear Safari toolbar
 v1.8.138 ms-btn: add max-width:220px + text-overflow:ellipsis so long filter labels truncate instead of overflowing
 v1.8.137 Widen Etsy Status button to fit No Listing; det-actions wrap on mobile so Edit button is visible
 v1.8.136 Fix detail view cut off on iOS Safari -- appScreen and body use -webkit-fill-available for height
@@ -337,6 +338,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .finish-fb-toggle input{accent-color:var(--copper);cursor:pointer;}
 
   .toast{position:fixed;bottom:18px;right:18px;background:var(--copper);color:var(--bg);padding:8px 15px;font-size:12px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;}
+  @media(max-width:700px){.toast{bottom:80px;}}
   .toast.show{transform:translateY(0);opacity:1;}
   ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}
   ::-webkit-scrollbar-thumb{background:var(--border);}::-webkit-scrollbar-thumb:hover{background:var(--copper-dim);}
@@ -470,7 +472,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.138';
+const APP_VERSION = 'v1.8.139';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';

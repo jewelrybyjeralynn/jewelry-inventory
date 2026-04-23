@@ -9,11 +9,38 @@
 ---
 
 ## Current Version
-**v1.8.119** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
+**v1.8.139** — Always deliver new versions as `JewelryInventory_vXXXXX.html` to force fresh download, then rename to `JewelryInventory.html` before uploading to GitHub.
 
 ---
 
 ## 🟡 ACTIVE WORK — START HERE NEXT SESSION
+
+### Mobile responsiveness — phased implementation
+
+**Phase 1: Single-pane navigation — DONE (v1.8.126)**
+- `selectItem()` patched: adds `.mob-visible` to `#detailPane` on mobile after SKU tap
+- `showDetail()` patched: injects "← Back to list" button at top of detail pane HTML
+- `mobBack()` added: removes `.mob-visible` to return to list
+- Desktop behavior unchanged. All CSS was already in place.
+
+**Phase 2: Filter drawer — DONE (v1.8.134)**
+- `.filters` div moved out of `<header>` into `#filterBar` sibling div between `<header>` and `.main`
+- Desktop CSS: `#filterBar` renders as compact bar below header; Add SKU pushed right via `first-of-type` CSS (not inline style)
+- Mobile CSS: `#filterBar` default `display:none`; JS explicitly sets on load via `matchMedia` (CSS alone unreliable with inline styles); `toggleMobFilters()` uses inline style for reliability
+- `mob-add-btn` removed entirely -- Add SKU lives in drawer only on mobile
+- Key lesson: inline styles set by JS beat CSS media queries; use JS `matchMedia` + inline style for mobile show/hide
+
+**Phase 3: Modal usability on mobile — DONE (v1.8.138)**
+- Modal height fixed with `-webkit-fill-available` (iOS Safari 100vh includes browser chrome)
+- Same fix applied to `#appScreen` and `body`
+- Filter button (ms-btn) widened to 140px min, 220px max with `text-overflow:ellipsis` for long active filter labels
+- Detail title action buttons wrap on mobile so Edit is never cut off
+- Key lesson: iOS Safari `100vh` != visible viewport; always pair with `-webkit-fill-available`
+
+**Phase 4: General polish — DONE (v1.8.139)**
+- Toast bottom offset bumped to 80px on mobile to clear Safari toolbar
+- `fgrid` 2-col layout at 393px is fine, no change needed
+- `sku-desc` ellipsis already correct, no change needed
 
 ### SET sibling edit bug — status as of v1.8.119
 
@@ -243,7 +270,10 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 - On Save (both new add and edit), before posting to Apps Script, scan in-memory data for any row where Packaging SKU or New ETSY SKU matches the value being saved AND that row belongs to a different packaging group (i.e., different sibling cluster -- not sharing the same PKG SKU)
 - If collision found: block save, show inline warning identifying the conflicting SKU
 - No server-side check needed -- solo user, in-memory data is authoritative for the session
-### Mobile JS single-pane navigation (CSS done, JS pending)
+### Mobile Phase 1: single-pane navigation -- DONE (v1.8.126)
+### Mobile Phase 2: filter drawer -- DONE (v1.8.134)
+### Mobile Phase 3: modal usability -- DONE (v1.8.138)
+### Mobile Phase 4: general polish -- DONE (v1.8.139)
 ### Run Templates integration (deferred -- see previous sessions for option 2 CORS details)
 
 ---
@@ -279,6 +309,22 @@ Tag-input autocomplete. Stored as full names. First 2 colors used in SKU.
 
 | Version | Change |
 |---------|--------|
+| v1.8.139 | Mobile phase 4: toast bottom offset 80px on mobile to clear Safari toolbar |
+| v1.8.138 | ms-btn max-width:220px + text-overflow:ellipsis; det-actions wrap on mobile |
+| v1.8.137 | Widen Etsy Status button; det-actions wrap on mobile so Edit visible |
+| v1.8.136 | Fix detail view cut off on iOS -- appScreen/body use -webkit-fill-available |
+| v1.8.135 | Mobile phase 3: modal height uses -webkit-fill-available for iOS Safari |
+| v1.8.134 | Fix Add SKU right-aligned in mobile drawer -- remove inline margin-left:auto |
+| v1.8.133 | Fix filterBar mobile visibility -- JS explicitly sets display:none on mobile load; toggleMobFilters uses inline style |
+| v1.8.132 | filterBar default display:none, desktop display:flex via min-width:701px query |
+| v1.8.131 | Remove mob-add-btn from header -- Add SKU already in filter drawer |
+| v1.8.130 | Fix filter drawer open on mobile load -- #filterBar ID-only, no class conflict; Add SKU margin reset in drawer |
+| v1.8.129 | Fix duplicate Add SKU on desktop -- mob-add-btn missing display:none in default styles |
+| v1.8.128 | Filter bar: Add SKU pushed right; left padding aligned with header |
+| v1.8.127 | Mobile phase 2: filter drawer -- filters moved to #filterBar below header; toggleMobFilters() implemented |
+| v1.8.126 | Mobile phase 1: single-pane navigation -- selectItem shows detail pane, back button returns to list |
+| v1.8.125 | Chain/Bead/Clasp Details placeholder: added [bead sku] to hint text |
+| v1.8.124 | Sort dropdown in list pane: Default / Recently Edited / Least Recently Edited (by API_Edit, siblings grouped by max) |
 | v1.8.119 | getFinishAbbr: normalized (Front) lookup before fallback concatenation |
 | v1.8.118 | Fix dangling else in saveRecord FIELDS loop |
 | v1.8.117 | Chain Length Config: added Standard/Minor/Major & Max Length options; removed Max Length column |
