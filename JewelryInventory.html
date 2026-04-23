@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.126 Mobile phase 1: single-pane navigation -- tap SKU shows detail, back button returns to list
 v1.8.125 Chain/Bead/Clasp Details placeholder: added [bead sku] to hint text
 v1.8.124 Sort dropdown in list pane: Default / Recently Edited / Least Recently Edited (by API_Edit, siblings grouped by max)
 v1.8.68  Fix const v reassignment crash in multifinish renderer breaking double-click edit
@@ -460,7 +461,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.125';
+const APP_VERSION = 'v1.8.126';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -875,7 +876,16 @@ function render() {
   }).join('');
 }
 
-function selectItem(i) { selectedIdx=i; render(); showDetail(filtered[i]); }
+function mobBack() {
+  document.getElementById('detailPane').classList.remove('mob-visible');
+}
+
+function selectItem(i) {
+  selectedIdx=i; render(); showDetail(filtered[i]);
+  if (window.matchMedia('(max-width:700px)').matches) {
+    document.getElementById('detailPane').classList.add('mob-visible');
+  }
+}
 
 function f(label,v,full,pre) {
   const valStyle = pre ? ' style="white-space:pre-wrap;font-family:inherit;cursor:text;user-select:text;"' : '';
@@ -937,6 +947,7 @@ function showDetail(r, sibIdx) {
   window.__currentPackagingSKU = primary.packagingSKU || '';
   window.__currentDisplayRec = displayRec;
   document.getElementById('detailPane').innerHTML=`
+    <button class="mob-back" onclick="mobBack()">← Back to list</button>
     <div class="det-title">
       <div>${primary.packagingSKU}</div>
       <div class="det-actions">
