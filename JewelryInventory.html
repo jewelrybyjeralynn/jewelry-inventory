@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.141 Mobile: status badge stacks below SKU name (no more horizontal clipping); version number hidden on mobile to fix Filters button clipping
 v1.8.140 SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group
 v1.8.139 Mobile phase 4: toast bottom offset increased to 80px on mobile to clear Safari toolbar
 v1.8.138 ms-btn: add max-width:220px + text-overflow:ellipsis so long filter labels truncate instead of overflowing
@@ -352,6 +353,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   @media(max-width:700px){
     header{flex-wrap:wrap;gap:8px;padding:9px 12px;}
     .logo{font-size:13px;flex:1;}
+    #appVersion{display:none;}
     .search-wrap{order:3;width:100%;flex:none;}
     #filterBar{display:none;flex-direction:column;gap:8px;padding:10px 12px;align-items:flex-start;background:var(--surface);border-bottom:1px solid var(--border);}
     .mob-filter-btn{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;}
@@ -369,7 +371,9 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     .detail-pane{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;}
     .detail-pane.mob-visible{display:flex;}
 
-    /* Detail title actions wrap on mobile */
+    /* List item -- stack badge below name on mobile */
+    .sku-item{grid-template-columns:1fr;grid-template-rows:auto auto auto;}
+    .sb{align-self:start;justify-self:start;margin-top:2px;}
     .det-title{flex-wrap:wrap;}
     .det-actions{flex-wrap:wrap;flex-shrink:1;}
     .mob-back{display:flex;align-items:center;gap:7px;background:none;border:none;border-bottom:1px solid var(--border);color:var(--copper);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;padding:9px 13px;flex-shrink:0;width:100%;text-align:left;}
@@ -473,7 +477,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.140';
+const APP_VERSION = 'v1.8.141';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
