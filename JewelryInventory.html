@@ -89,6 +89,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.135 Mobile phase 3: modal height uses -webkit-fill-available to fix iOS Safari 100vh browser chrome overlap
 v1.8.134 Fix Add SKU right-aligned in mobile drawer -- remove inline margin-left:auto, apply via desktop-only CSS
 v1.8.133 Fix filterBar mobile visibility -- JS explicitly sets display:none on mobile load; toggleMobFilters uses inline style
 v1.8.132 Fix filterBar showing on mobile -- default display:none, desktop display:flex via min-width:701px query; eliminates cascade conflict
@@ -368,7 +369,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 
     /* Modal full screen */
     .modal-ov{padding:0;align-items:flex-start;}
-    .modal{max-width:100%;max-height:100vh;height:100vh;border:none;}
+    .modal{max-width:100%;max-height:100vh;max-height:-webkit-fill-available;height:100vh;height:-webkit-fill-available;border:none;}
     .fform{grid-template-columns:1fr 1fr;}
     .finish-panel{grid-template-rows:repeat(4,auto);}
     .finish-fb-group{grid-template-columns:1fr;grid-template-rows:auto repeat(12,auto);}
@@ -464,7 +465,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.134';
+const APP_VERSION = 'v1.8.135';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
