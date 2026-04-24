@@ -92,6 +92,8 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.150 SKU regen mode -- blank both SKU fields during edit to re-enable auto-populate from current field values
+v1.8.149 EB segment in SKU for ER/SET-ER when chainDetail contains 'bead' (mirrors CB logic for PD)
 v1.8.148 Chain/Bead/Clasp Details placeholder updated -- added [chain]; [pendant] to hint text
 v1.8.147 Expand Object Description auto-derive to all types -- PD/ER/BR/RN/KC/JD/NK/PKG get {shape} {type plain name}
 v1.8.146 Auto-derive Object Description at save time for SET components -- SET-PD/ER/BR gets {shape} Pendant/Earrings/Bracelet; field stays off the form
@@ -493,7 +495,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.148';
+const APP_VERSION = 'v1.8.150';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1315,6 +1317,16 @@ function buildForm(rec, lockedKeys) {
   // Wire up finish for auto-populate
   const finishSel = document.getElementById('f_finish');
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
+  // SKU regen mode: if user blanks both SKU fields during edit, enable auto-populate
+  const pkgSkuEl  = document.getElementById('f_packagingSKU');
+  const etsySkuEl = document.getElementById('f_newEtsySKU');
+  function checkSkuRegenMode() {
+    const bothBlank = !(pkgSkuEl&&pkgSkuEl.value.trim()) && !(etsySkuEl&&etsySkuEl.value.trim());
+    window.__skuRegenMode = bothBlank;
+    if (bothBlank) autoPopulateSKU();
+  }
+  if (pkgSkuEl)  pkgSkuEl.addEventListener('input',  checkSkuRegenMode);
+  if (etsySkuEl) etsySkuEl.addEventListener('input', checkSkuRegenMode);
 }
 
 function onMaterialChange() {
@@ -1863,6 +1875,13 @@ function buildSKUParts(components) {
   const isBeadType = ['PD','SET-PD'].includes((pd.type||'').trim());
   const hasChainBeads = isBeadType && /bead/i.test(pd.chainDetail||'');
   const chainBeads = hasChainBeads ? 'CB' : '';
+
+  // EB = Earwire + Beads: insert after chain metal for ER/SET-ER when chainDetail contains 'bead'
+  const isEarType = ['ER','SET-ER'].includes((pd.type||'').trim());
+  const hasEarBeads = isEarType && /bead/i.test(pd.chainDetail||'');
+  const earBeads = hasEarBeads ? 'EB' : '';
+
+  const beadSegment = chainBeads || earBeads;
   const finReadable = isNoFinish ? '' : finishReadable(pd.finish||'');
   const finShort = isNoFinish ? '' : finishAbbr(pd.finish||'');
   const colorAbbrs = (pd.pieceColors||'').split(',').map(c => {
@@ -1876,8 +1895,8 @@ function buildSKUParts(components) {
     return match ? match.split('=')[0].trim() : stored;
   }).filter(Boolean).slice(0, 2).join(''); // cap at first 2 colors in SKU
 
-  const pkgBase  = [typeParent, shapeStr, metal, chainBeads, finReadable].filter(Boolean).join('-');
-  const etsyBase = [typeParent, shapeStr, metal, chainBeads, finShort].filter(Boolean).join('-');
+  const pkgBase  = [typeParent, shapeStr, metal, beadSegment, finReadable].filter(Boolean).join('-');
+  const etsyBase = [typeParent, shapeStr, metal, beadSegment, finShort].filter(Boolean).join('-');
 
   const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
   const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
@@ -1889,8 +1908,8 @@ function buildSKUParts(components) {
 }
 
 function autoPopulateSKU() {
-  // Don't recalculate SKU when editing an existing record
-  if (editingId !== null) return;
+  // Don't recalculate SKU when editing an existing record, unless user blanked both SKU fields
+  if (editingId !== null && !window.__skuRegenMode) return;
   const typeVal   = (document.getElementById('f_type')||{}).value || '';
   const shapeVal  = (document.getElementById('f_shape')||{}).value || '';
   const chainVal  = (document.getElementById('f_chain')||{}).value || '';
@@ -1974,7 +1993,7 @@ function openAddComponent(parentId) {
   buildForm(prefill, COMPONENT_LOCKED);
   document.getElementById('modalOv').classList.add('open');
 }
-function closeModal() { document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; }
+function closeModal() { document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; window.__skuRegenMode=false; }
 
 async function saveRecord() {
   const rec={};
