@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.148 Chain/Bead/Clasp Details placeholder updated -- added [chain]; [pendant] to hint text
 v1.8.147 Expand Object Description auto-derive to all types -- PD/ER/BR/RN/KC/JD/NK/PKG get {shape} {type plain name}
 v1.8.146 Auto-derive Object Description at save time for SET components -- SET-PD/ER/BR gets {shape} Pendant/Earrings/Bracelet; field stays off the form
 v1.8.145 Fix desktop list item -- mobile uses flex+order to stack badge last; desktop grid restored
@@ -492,7 +493,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.147';
+const APP_VERSION = 'v1.8.148';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1050,7 +1051,7 @@ const FIELDS=[
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
   {key:'chain',label:'Chain Or Hardware',type:'chain'},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
-  {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], triangle frame, connectors, charms',full:true},
+  {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], triangle frame, connectors, charms, [chain]; [pendant]',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
