@@ -89,6 +89,8 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.147 Expand Object Description auto-derive to all types -- PD/ER/BR/RN/KC/JD/NK/PKG get {shape} {type plain name}
+v1.8.146 Auto-derive Object Description at save time for SET components -- SET-PD/ER/BR gets {shape} Pendant/Earrings/Bracelet; field stays off the form
 v1.8.145 Fix desktop list item -- mobile uses flex+order to stack badge last; desktop grid restored
 v1.8.144 Mobile: hide Sort label, cap sort dropdown width to stop list header clipping on right
 v1.8.143 Mobile: status badge moved to third row -- SKU name, description, then badge
@@ -487,7 +489,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.145';
+const APP_VERSION = 'v1.8.147';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1305,7 +1307,7 @@ function buildForm(rec, lockedKeys) {
   }
   // Wire up shape input for auto-populate
   const shapeInput = document.getElementById('f_shape');
-  if (shapeInput) shapeInput.addEventListener('input', autoPopulateSKU);
+  if (shapeInput) shapeInput.addEventListener('input', () => { autoPopulateSKU(); });
   // Wire up finish for auto-populate
   const finishSel = document.getElementById('f_finish');
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
@@ -1819,6 +1821,17 @@ function onTypeChange() {
   autoPopulateSKU();
 }
 
+function deriveObjectDescription(typeVal, shapeVal) {
+  const typeNames = {
+    'SET-PD':'Pendant','SET-ER':'Earrings','SET-BR':'Bracelet',
+    'PD':'Pendant Necklace','ER':'Earrings','BR':'Bracelet',
+    'RN':'Ring','KC':'Keychain','JD':'Jewelry Dish','NK':'Necklace','PKG':'Gift Packaging'
+  };
+  const suffix = typeNames[typeVal] || '';
+  if (!suffix) return '';
+  return shapeVal ? `${shapeVal} ${suffix}` : suffix;
+}
+
 function isSetType(typeVal) {
   return (typeVal||'').startsWith('SET-');
 }
@@ -2042,6 +2055,11 @@ async function saveRecord() {
   }
 
   // Colors are already stored as full names by the tag-input widget -- no expansion needed
+
+  // Auto-derive Object Description for new SET components (never entered manually)
+  if (editingId === null) {
+    rec.objectDescription = deriveObjectDescription(rec.type || '', rec.shape || '');
+  }
 
   if (editingId!==null) {
     // Find record - could be in data directly or inside a _siblings array
