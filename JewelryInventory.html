@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.156 Detail view restructure: Shape first, new Additional Details section, Chain/Bead/Clasp Details full width
 v1.8.155 Fix Width x Height label; fraction conversion handles WxH format
 v1.8.154 Decimal-to-fraction conversion on blur for Wide x Height, Drop Length, Chain Or Drop Length; Extension Chain options updated
 v1.8.153 4-col form: Drop Length field, Object Description live-derived + editable, Jump Rings hidden from detail view
@@ -500,7 +501,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.155';
+const APP_VERSION = 'v1.8.156';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1010,16 +1011,17 @@ function showDetail(r, sibIdx) {
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',displayRec.objectDescription)}${f('Width x Height',formatSize(displayRec.wideHeight))}${displayRec.dropLength?f('Drop Length',displayRec.dropLength):''}
-      ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
-      ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
-      
+      ${f('Shape',displayRec.shape)}${f('Width x Height',formatSize(displayRec.wideHeight))}${f('Drop Length',displayRec.dropLength)}
+      ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}${f('Description',displayRec.objectDescription)}
     </div></div>
     <div><div class="sec-lbl">Chain & Hardware</div><div class="fgrid">
       ${f('Chain Or Hardware',displayRec.chain)}${f('Chain Or Drop Length',displayRec.chainOrDropLength)}
-      ${f('Extension Chain',displayRec.extChainOption)}${f('Chain/Bead/Clasp Details',displayRec.chainDetail)}
-      ${displayRec.chainConfig?f('Chain Length Config',displayRec.chainConfig):''}
+      ${f('Extension Chain',displayRec.extChainOption)}${f('Chain Length Config',displayRec.chainConfig)}
+      ${f('Chain/Bead/Clasp Details',displayRec.chainDetail,true)}
       ${f('Finish',displayRec.finish)}
+    </div></div>
+    <div><div class="sec-lbl">Additional Details</div><div class="fgrid">
+      ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}${f('Gift Box',displayRec.giftBox)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',displayRec.newEtsySKU)}
