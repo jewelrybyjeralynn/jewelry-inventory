@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.153 4-col form: Drop Length field, Object Description live-derived + editable, Jump Rings hidden from detail view
 v1.8.152 CL segment for ER/SET-ER when chainDetail contains 'chain link'; combines with EB as EB-CL when both present
 v1.8.151 Fix SKU regen mode -- clear manualEdit flag on both SKU fields when blanked so autoPopulateSKU can write generated values
 v1.8.150 SKU regen mode -- blank both SKU fields during edit to re-enable auto-populate from current field values
@@ -306,7 +307,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   .modal-x{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1;}
   .modal-x:hover{color:var(--text);}
   .modal-body{padding:11px 14px;flex:1;}
-  .fform{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .fform{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
   .fg{display:flex;flex-direction:column;gap:3px;}
   .fg.full{grid-column:1/-1;}
   label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
@@ -497,7 +498,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.152';
+const APP_VERSION = 'v1.8.153';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -516,7 +517,7 @@ const COL_MAP = {
   'Type':'type','Shape':'shape',
   'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
   'Object Description':'objectDescription',
-  'Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight',
+  'Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight','Drop Length':'dropLength','Drop\nLength':'dropLength',
   'Material':'material',
   'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
   'Chain Or Drop Length':'chainOrDropLength','Chain\nLength':'chainOrDropLength',
@@ -1007,7 +1008,7 @@ function showDetail(r, sibIdx) {
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',displayRec.objectDescription)}${f('Wide x Height',formatSize(displayRec.wideHeight))}
+      ${f('Description',displayRec.objectDescription)}${f('Wide x Height',formatSize(displayRec.wideHeight))}${displayRec.dropLength?f('Drop Length',displayRec.dropLength):''}
       ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
       ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
       
@@ -1017,7 +1018,6 @@ function showDetail(r, sibIdx) {
       ${f('Extension Chain',displayRec.extChainOption)}${f('Chain/Bead/Clasp Details',displayRec.chainDetail)}
       ${displayRec.chainConfig?f('Chain Length Config',displayRec.chainConfig):''}
       ${f('Finish',displayRec.finish)}
-      ${f('Jump Rings',displayRec.jumpRings)}${f('Jump Ring Qty',displayRec.jumpRingsQty)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       ${f('New Etsy SKU',displayRec.newEtsySKU)}
@@ -1047,13 +1047,14 @@ function showDetail(r, sibIdx) {
 
 // FORM
 const FIELDS=[
-  {key:'type',label:'Type',type:'type',third:true},
+  {key:'type',label:'Type',type:'type',spanTwo:true},
   {key:'shape',label:'Shape',type:'shape',third:true},
   {key:'material',label:'Material',type:'material',third:true},
   {key:'wideHeight',label:'Wide x Height',third:true},
+  {key:'dropLength',label:'Drop Length',third:true},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
-  {key:'chain',label:'Chain Or Hardware',type:'chain'},
+  {key:'chain',label:'Chain Or Hardware',type:'chain',spanThree:true},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], triangle frame, connectors, charms, [chain]; [pendant]',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
@@ -1061,11 +1062,12 @@ const FIELDS=[
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'giftBox',label:'Gift Box',third:true},
+  {key:'objectDescription',label:'Object Description',third:true},
   {key:'packagingSKU',label:'Packaging SKU',required:true},
   {key:'newEtsySKU',label:'New Etsy SKU'}
 ];
 
-const COMPONENT_BLANK = ['type','shape','wideHeight','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','finish','extChainOption','pieceColors'];
+const COMPONENT_BLANK = ['type','shape','wideHeight','dropLength','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','finish','extChainOption','pieceColors','objectDescription'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -1124,11 +1126,11 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg" style="${f.third?'':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.spanTwo?'grid-column:span 2':f.spanThree?'grid-column:span 3':f.full?'grid-column:1/-1':f.third?'':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='material') {
       const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
-      const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+      const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='finish') {
@@ -1249,7 +1251,7 @@ function buildForm(rec, lockedKeys) {
         const o = chainOptions.find(o => o.sku === v);
         return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
       })() : '';
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}">
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.spanThree?'grid-column:span 3':f.spanTwo?'grid-column:span 2':'grid-column:span 2'}">
         <label>${f.label}</label>
         <div class="combo-wrap">
           <input type="text" id="f_${f.key}_display" value="${displayVal}" placeholder="Type to search chains..."
@@ -1265,7 +1267,7 @@ function buildForm(rec, lockedKeys) {
       </div>`;
     }
     if (f.type==='sel') {
-      const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
+      const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
       if (f.necklaceOnly) {
         const necklaceTypes = ['NK','PD','SET-PD'];
         // Use rec.type first (reliable), only fall back to DOM if rec has no type (onTypeChange rebuilds)
@@ -1275,8 +1277,11 @@ function buildForm(rec, lockedKeys) {
       }
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v || o===v+'"' || o===v.replace('"','') ?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
-    const colSpan = f.full ? 'grid-column:1/-1' : f.third ? '' : 'grid-column:span 2';
-    return `<div class="fg" style="${colSpan}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.placeholder||f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
+    const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
+    if (f.key === 'objectDescription') {
+      return `<div class="fg" style="${colSpan}"><label>${f.label}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Auto-derived from Type + Shape" oninput="this.dataset.manualEdit='1'" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
+    }
+    return `<div class="fg" style="${colSpan}"><label>${f.label}${f.required?' *':''}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="${f.placeholder||f.label}" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':""}></div>`;
   }).join('');
 
   // Wire up live counter for New Etsy SKU
@@ -1315,7 +1320,7 @@ function buildForm(rec, lockedKeys) {
   }
   // Wire up shape input for auto-populate
   const shapeInput = document.getElementById('f_shape');
-  if (shapeInput) shapeInput.addEventListener('input', () => { autoPopulateSKU(); });
+  if (shapeInput) shapeInput.addEventListener('input', () => { autoPopulateSKU(); liveUpdateObjectDescription(); });
   // Wire up finish for auto-populate
   const finishSel = document.getElementById('f_finish');
   if (finishSel) finishSel.addEventListener('change', autoPopulateSKU);
@@ -1841,7 +1846,20 @@ function onTypeChange() {
     }
   }
 
+  liveUpdateObjectDescription();
   autoPopulateSKU();
+}
+
+function liveUpdateObjectDescription() {
+  const typeVal  = (document.getElementById('f_type')||{}).value || '';
+  const shapeVal = (document.getElementById('f_shape')||{}).value || '';
+  const el = document.getElementById('f_objectDescription');
+  if (!el) return;
+  // Only auto-fill if field is empty or hasn't been manually edited
+  if (!el.dataset.manualEdit) {
+    const derived = deriveObjectDescription(typeVal, shapeVal);
+    if (derived) el.value = derived;
+  }
 }
 
 function deriveObjectDescription(typeVal, shapeVal) {
@@ -1991,6 +2009,9 @@ function openEditModal(id) {
   }
   document.getElementById('modalTitle').textContent = 'Edit SKU';
   buildForm(rec, null);
+  // Mark objectDescription as manually edited so live-derive doesn't overwrite existing value
+  const objDescEl = document.getElementById('f_objectDescription');
+  if (objDescEl && objDescEl.value) objDescEl.dataset.manualEdit = '1';
   document.getElementById('modalOv').classList.add('open');
 }
 
@@ -2090,8 +2111,9 @@ async function saveRecord() {
 
   // Colors are already stored as full names by the tag-input widget -- no expansion needed
 
-  // Auto-derive Object Description for new SET components (never entered manually)
-  if (editingId === null) {
+  // Object Description: field value wins (live-derived or user-edited in form)
+  // If somehow empty on a new record, fall back to derive
+  if (editingId === null && !rec.objectDescription) {
     rec.objectDescription = deriveObjectDescription(rec.type || '', rec.shape || '');
   }
 
@@ -2117,7 +2139,8 @@ async function saveRecord() {
     if (targetRec) Object.assign(targetRec, rec);
     rec._action = 'update';
     rec._rowId = original.rowId || '';
-    rec.objectDescription = original.objectDescription || '';
+    // Use form field value (may have been edited); fall back to original if blank
+    if (!rec.objectDescription) rec.objectDescription = original.objectDescription || '';
     rec._originalDescription = original.objectDescription || '';
     rec._originalType = original.type || rec.type || '';
     rec._originalShape = original.shape || '';
