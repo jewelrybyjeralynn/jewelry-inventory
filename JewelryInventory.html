@@ -92,7 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
-v1.8.154 Relabel Wide x Height to Width x Height in form and detail view (internal key + sheet column unchanged)
+v1.8.154 Decimal-to-fraction conversion on blur for Wide x Height, Drop Length, Chain Or Drop Length; Extension Chain options updated
 v1.8.153 4-col form: Drop Length field, Object Description live-derived + editable, Jump Rings hidden from detail view
 v1.8.152 CL segment for ER/SET-ER when chainDetail contains 'chain link'; combines with EB as EB-CL when both present
 v1.8.151 Fix SKU regen mode -- clear manualEdit flag on both SKU fields when blanked so autoPopulateSKU can write generated values
@@ -1009,7 +1009,7 @@ function showDetail(r, sibIdx) {
       </div>
     </div>
     <div><div class="sec-lbl">Physical Details</div><div class="fgrid">
-      ${f('Description',displayRec.objectDescription)}${f('Width x Height',formatSize(displayRec.wideHeight))}${displayRec.dropLength?f('Drop Length',displayRec.dropLength):''}
+      ${f('Description',displayRec.objectDescription)}${f('Wide x Height',formatSize(displayRec.wideHeight))}${displayRec.dropLength?f('Drop Length',displayRec.dropLength):''}
       ${f('Material',displayRec.material)}${f('Colors',displayRec.pieceColors)}
       ${f('Double Sided',displayRec.doubleSided)}${f('Charm',displayRec.charm)}
       
@@ -1028,7 +1028,7 @@ function showDetail(r, sibIdx) {
     </div></div>
     ${sibs.length>1?`<div><div class="sec-lbl">SKU Group Components (${sibs.length}) — click to view/edit</div><div class="sib-list">
       ${sibs.map((s,si)=>{
-        const chainInfo = [s.chain, formatSize(s.wideHeight), s.chainOrDropLength ? s.chainOrDropLength+'"' : null].filter(Boolean).join(' · ');
+        const chainInfo = [s.chain, formatSize(s.wideHeight), s.chainOrDropLength || null].filter(Boolean).join(' · ');
         const isCurrent = s === displayRec;
         const typeEntry = typeOptions.find(o => o.split('=')[0].trim() === (s.type||'').split('-').pop());
         const typePlain = typeEntry ? typeEntry.split('=').slice(1).join('=').trim() : (s.type||'—');
@@ -1051,10 +1051,10 @@ const FIELDS=[
   {key:'type',label:'Type',type:'type',spanTwo:true},
   {key:'shape',label:'Shape',type:'shape',third:true},
   {key:'material',label:'Material',type:'material',third:true},
-  {key:'wideHeight',label:'Width x Height',third:true},
+  {key:'wideHeight',label:'Wide x Height',third:true},
   {key:'dropLength',label:'Drop Length',third:true},
   {key:'chainOrDropLength',label:'Chain Or Drop Length',third:true},
-  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0"','1"','1.5"','2"'],necklaceOnly:true,third:true},
+  {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0','1','1 1/2','2'],necklaceOnly:true,third:true},
   {key:'chain',label:'Chain Or Hardware',type:'chain',spanThree:true},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], triangle frame, connectors, charms, [chain]; [pendant]',full:true},
@@ -1340,6 +1340,7 @@ function buildForm(rec, lockedKeys) {
   }
   if (pkgSkuEl)  pkgSkuEl.addEventListener('input',  checkSkuRegenMode);
   if (etsySkuEl) etsySkuEl.addEventListener('input', checkSkuRegenMode);
+  wireFractionFields();
 }
 
 function onMaterialChange() {
@@ -1363,6 +1364,40 @@ function onMaterialChange() {
   autoPopulateSKU();
 }
 
+
+// ── FRACTION CONVERSION ─────────────────────────────────────────────────────
+function decimalToFraction(val) {
+  if (!val && val !== 0) return '';
+  const str = String(val).trim();
+  // Already a fraction or non-numeric -- pass through
+  if (/[\/]/.test(str) || isNaN(parseFloat(str.replace(/^\d+\s+/, '')))) return str;
+  const num = parseFloat(str);
+  if (isNaN(num)) return str;
+  const whole = Math.floor(num);
+  const dec = num - whole;
+  // Round to nearest 1/8
+  const eighths = Math.round(dec * 8);
+  if (eighths === 0) return whole > 0 ? String(whole) : '0';
+  if (eighths === 8) return String(whole + 1);
+  // Reduce fraction
+  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+  const g = gcd(eighths, 8);
+  const num2 = eighths / g;
+  const den2 = 8 / g;
+  const frac = `${num2}/${den2}`;
+  return whole > 0 ? `${whole} ${frac}` : frac;
+}
+
+function wireFractionFields() {
+  ['f_wideHeight','f_dropLength','f_chainOrDropLength'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      const converted = decimalToFraction(el.value);
+      if (converted !== el.value) el.value = converted;
+    });
+  });
+}
 // ── COLOR TAG-INPUT ─────────────────────────────────────────────────────────
 // State per field key: array of {abbr, fullName}
 const colorTagState = {};
