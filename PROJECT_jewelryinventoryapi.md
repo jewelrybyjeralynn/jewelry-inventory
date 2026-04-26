@@ -2,7 +2,7 @@
 
 ## Links
 - **Live URL:** https://jewelrybyjeralynn.github.io/jewelry-inventory/JewelryInventory.html
-- **Repo:** jewelrybyjeralynn/jewelry-inventory
+- **Repo:** jewelrybyjeralynn/jewelry-inventory (private -- LICENSE file added, GitHub Pro required for Pages on private repo)
 - **Apps Script URL:** https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec
 
 ## Architecture
@@ -25,17 +25,21 @@ Spreadsheet published base URL:
 
 ### Listings_Published columns (0-indexed)
 ```
-0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Characters
-5:Object Description  6:Wide x Height  7:Material  8:Chain Or Hardware
-9:Chain Or Drop Length  10:Chain/Bead/Clasp Details  11:Extension Chain
+0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Object Description
+5:Width x Height  6:Drop Length  7:Material  8:Chain Or Hardware
+9:Chain Length  10:Chain/Bead/Clasp Details  11:Extension Chain
 12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
 17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
 22:ETSY ListingID  23:ETSY SKU  24:ETSY Title  25:ETSY Status  26:ETSY Price
-27:ETSY URL  28:Update Templates  29:Template - Title Custom Intro
-30:Template - Components Necklace Length Options
-31:Template - Combined  32:Template - Tags
-33:Added_Timestamp  34:Row_ID  35:API_Edit
+27:ETSY URL  28:Template - Title Custom Intro
+29:Template - Components Necklace Length Options
+30:Template - Combined  31:Template - Tags  32:Current Tags  33:Listing Output
+34:Added_Timestamp  35:Row_ID  36:API_Edit
 ```
+
+**Removed columns:** Characters (dropped), Update Templates (dropped), Template - Why You will Love it (dropped)
+
+**Legacy COL_MAP aliases kept for backward compat:** `Wide x Height`, `Chain Or Drop Length`
 
 ## Apps Script Actions
 | Action | Description |
@@ -66,10 +70,29 @@ Spreadsheet published base URL:
 - `CB` inserted after chain metal when chain detail contains "bead" (PD/SET-PD only)
 
 ### Object Description
-- Never entered manually -- auto-derived at save time as `{shape} {type plain name}`
-- Examples: `Hexagon Earrings`, `Dolphin Pendant Necklace`, `Heart Bracelet`
+- Shown in form (last field in Row 7) -- auto-derived live as Type and Shape are selected
+- User can edit the derived value before saving; whatever is in the field at Save time wins
+- Derived as `{shape} {type plain name}` -- e.g. `Circle Earrings`, `Hexagon Pendant Necklace`
 - Type plain name map: SET-PD=Pendant, SET-ER=Earrings, SET-BR=Bracelet, PD=Pendant Necklace, ER=Earrings, BR=Bracelet, RN=Ring, KC=Keychain, JD=Jewelry Dish, NK=Necklace, PKG=Gift Packaging
-- Edit path preserves existing value unchanged
+- On edit open: existing value pre-filled and marked as manualEdit so live-derive doesn't overwrite
+- Fallback: if empty on new record at save time, derives from current Type + Shape
+
+### Form Layout (4-column grid)
+- Row 1: Type (span 2) / Shape / Material
+- Row 2: Width x Height / Drop Length / Chain Length (necklaceOnly) / Extension Chain (necklaceOnly)
+- Row 3: Chain Or Hardware (span 3) / Chain Length Config (necklaceOnly, span 1)
+- Row 4: Chain/Bead/Clasp Details (full width)
+- Row 5: Finish (full width)
+- Row 6: Colors (full width)
+- Row 7: Charm / Double Sided / Gift Box / Object Description
+
+### Detail View Layout
+- **Physical Details:** Shape / Width x Height / Drop Length / Material / Colors / Description
+- **Chain & Hardware:** Chain Or Hardware / Chain Length / Extension Chain / Chain Length Config / Chain/Bead/Clasp Details (full width) / Finish
+- **Additional Details:** Charm / Double Sided / Gift Box
+- **Etsy Listing:** New Etsy SKU (ellipsis on overflow, hover for full) / Status / Added To Etsy / Etsy URL
+- **SKU Group Components:** siblings list (double-click to edit)
+- **Reference:** Template - Combined / Template - Components Necklace Length Options
 
 ### Chain Or Hardware filtering by Type
 | Type | Options shown |
@@ -79,6 +102,12 @@ Spreadsheet published base URL:
 | BR, SET-BR | includes BRACELET; others exclude it |
 | JD, PKG | disabled |
 | All others | excludes EAR, Keychain, BRACELET |
+
+### necklaceOnly Fields
+Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all others:
+- Chain Length (text input)
+- Extension Chain (dropdown: blank / 0 / 1 / 1 1/2 / 2)
+- Chain Length Config (dropdown)
 
 ### Finish
 - Checkboxes: 11 base finishes + No Finish, alphabetical, 4 columns
@@ -90,6 +119,12 @@ Spreadsheet published base URL:
 ### Material auto-finish rules
 - Aluminum, Stainless Steel, Bead, Zinc Alloy, Memory Wire → finish forced to "No Finish", finish panel disabled
 
+### Measurement Fields
+- Width x Height, Drop Length, Chain Length: decimal input auto-converts to nearest 1/8 fraction on blur
+- Width x Height supports WxH format (e.g. `2.5x2.5` → `2 1/2x2 1/2`)
+- No inch symbol used -- all measurements assumed in inches
+- Extension Chain options: blank / 0 / 1 / 1 1/2 / 2 (no " suffix)
+
 ### Colors
 - Tag-input autocomplete widget; type partial name to filter
 - Stored as full names comma-separated; abbreviations used in SKU
@@ -98,16 +133,21 @@ Spreadsheet published base URL:
 ### Other behaviors
 - Search strips hyphens and spaces before comparing
 - Type dropdown order matches Abbreviations_Published Type column order
-- Extension Chain and Chain Length Config only enabled for NK, PD, SET-PD
 - Double-click a component in SKU Group list → opens Edit modal for that component
 - Sort: Default / Recently Edited / Least Recently Edited (by API_Edit; siblings grouped by max)
 - SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group
 - Default filter on load: Etsy Status = Active
+- Jump Rings / Jump Ring Qty: hidden from detail view, data retained in sheet
+
+### Known TODOs
+- Watch for SET-ER/ER records with non-empty Chain Length Config (data validation/audit feature)
+- Characters column still exists in sheet -- to be dropped from sheet eventually (already not written by app)
 
 ## Delivery Convention
 - Filename: `JewelryInventory_vXXXXX.html` (forces fresh browser download)
 - Versioning: three-digit `major.minor.patch`
 - Each delivery: state version + one-line summary
+- Apps Script file: `JewelryInventoryAPI.js` -- must be manually deployed after changes
 
 ## Mobile Phases (all complete as of v1.8.145)
 - Phase 1 (v1.8.126): Single-pane navigation -- tap SKU shows detail, back button returns to list
@@ -118,20 +158,27 @@ Spreadsheet published base URL:
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
-| v1.8.147 | Expand Object Description auto-derive to all types -- all types get {shape} {type plain name} |
-| v1.8.146 | Auto-derive Object Description at save time -- field removed from form; deriveObjectDescription() called in saveRecord() |
-| v1.8.145 | Fix desktop list item -- mobile uses flex+order to stack badge last; desktop grid restored |
-| v1.8.144 | Mobile: hide Sort label, cap sort dropdown width |
-| v1.8.143 | Mobile: status badge moved to third row |
-| v1.8.142 | Mobile: version number moved to list pane header |
-| v1.8.141 | Mobile: status badge stacks below SKU name |
+| v1.8.164 | Fix Chain Length (text input) necklaceOnly disable -- was only handled for sel type |
+| v1.8.163 | Clear necklaceOnly fields on type change; fix Object Description derives from resolved shape |
+| v1.8.162 | Chain Length field necklaceOnly -- disabled for non-NK/PD/SET-PD types |
+| v1.8.161 | Fix Object Description live-derive fires on shape autocomplete selection not partial input |
+| v1.8.160 | Sync column renames: Width x Height, Chain Length; drop Characters from write |
+| v1.8.159 | New Etsy SKU ellipsis in detail view; Charm before Double Sided in Additional Details |
+| v1.8.158 | Chain/Bead/Clasp Details placeholder: triangle frame -> geometric frame |
+| v1.8.157 | Relabel Chain Or Drop Length to Chain Length in form and detail view |
+| v1.8.156 | Detail view restructure: Shape first, new Additional Details section, Chain/Bead/Clasp Details full width |
+| v1.8.155 | Fix Width x Height label; fraction conversion handles WxH format |
+| v1.8.154 | Decimal-to-fraction conversion on blur for Width x Height, Drop Length, Chain Length; Extension Chain options updated |
+| v1.8.153 | 4-col form: Drop Length field, Object Description live-derived + editable, Jump Rings hidden from detail view |
+| v1.8.152 | CL segment for ER/SET-ER when chainDetail contains 'chain link'; combines with EB as EB-CL when both present |
+| v1.8.151 | Fix SKU regen mode -- clear manualEdit flag on both SKU fields when blanked |
+| v1.8.150 | SKU regen mode -- blank both SKU fields during edit to re-enable auto-populate |
+| v1.8.149 | EB segment in SKU for ER/SET-ER when chainDetail contains 'bead' |
+| v1.8.148 | Chain/Bead/Clasp Details placeholder updated |
+| v1.8.147 | Expand Object Description auto-derive to all types |
+| v1.8.146 | Auto-derive Object Description at save time |
+| v1.8.145 | Fix desktop list item -- mobile flex+order restored |
 | v1.8.140 | SKU uniqueness check on Save |
-| v1.8.139 | Mobile phase 4: toast bottom offset 80px on mobile |
-| v1.8.138 | ms-btn: max-width + ellipsis for long filter labels |
-| v1.8.137 | Widen Etsy Status button; det-actions wrap on mobile |
-| v1.8.136 | Fix detail view cut off on iOS Safari |
-| v1.8.135 | Mobile phase 3: modal iOS Safari fix |
-| v1.8.134 | Mobile phase 2: filter drawer fixes complete |
 | v1.8.126 | Mobile phase 1: single-pane navigation |
 | v1.8.124 | Sort dropdown: Default / Recently Edited / Least Recently Edited |
 | v1.8.92 | Run Templates button in Reference section |
@@ -139,4 +186,4 @@ Spreadsheet published base URL:
 | v1.8.71 | PD type gets Chain Length Config + Extension Chain |
 | v1.8.70 | Double-click left pane item opens edit modal |
 | v1.8.46 | API_Edit column fix (removed duplicate doPost from Listings_Import.gs) |
-| v1.8.45 | Row_ID UUID column added (36-col structure) |
+| v1.8.45 | Row_ID UUID column added |
