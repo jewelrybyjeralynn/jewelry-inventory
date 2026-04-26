@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.165 Persistent in-app log drawer: structured logging throughout save/load/SET flows
 v1.8.164 Fix Chain Length (text input) necklaceOnly disable -- was only handled for sel type
 v1.8.163 Clear necklaceOnly fields on type change; fix Object Description derives from resolved shape
 v1.8.162 Chain Length field necklaceOnly -- disabled for non-NK/PD/SET-PD types
@@ -418,6 +419,27 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     .finish-panel{grid-template-rows:repeat(4,auto);}
     .finish-fb-group{grid-template-columns:1fr;grid-template-rows:auto repeat(12,auto);}
   }
+
+  /* LOG DRAWER */
+  #logBtn{position:fixed;bottom:18px;right:18px;z-index:900;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;cursor:pointer;border-radius:3px;}
+  #logBtn:hover{color:var(--text);border-color:var(--copper-dim);}
+  #logDrawer{position:fixed;bottom:0;right:0;width:620px;max-width:100vw;height:340px;z-index:901;background:var(--surface);border-top:1px solid var(--border);border-left:1px solid var(--border);display:none;flex-direction:column;}
+  #logDrawer.open{display:flex;}
+  #logDrHdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  #logDrHdr span{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+  #logDrHdr .log-hdr-btns{display:flex;gap:8px;}
+  #logDrHdr button{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;padding:3px 8px;cursor:pointer;}
+  #logDrHdr button:hover{color:var(--text);}
+  #logEntries{flex:1;overflow-y:auto;padding:6px 0;font-size:10px;font-family:'DM Mono',monospace;}
+  .log-row{display:grid;grid-template-columns:68px 52px 110px 1fr;gap:0 8px;padding:2px 10px;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5;}
+  .log-row:hover{background:var(--surface2);}
+  .log-time{color:var(--text-muted);}
+  .log-lvl{font-weight:500;}
+  .log-lvl.INFO{color:#4caf76;}
+  .log-lvl.WARN{color:#c8a840;}
+  .log-lvl.ERROR{color:#e07070;}
+  .log-ctx{color:var(--copper-dim);}
+  .log-msg{color:var(--text-dim);word-break:break-all;white-space:pre-wrap;}
 </style>
 </head>
 <body>
@@ -508,12 +530,64 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- LOG DRAWER -->
+<button id="logBtn" onclick="toggleLogDrawer()">◎ Log</button>
+<div id="logDrawer">
+  <div id="logDrHdr">
+    <span>App Log <span id="logCount" style="color:var(--copper-dim)"></span></span>
+    <div class="log-hdr-btns">
+      <button onclick="copyLog()">Copy All</button>
+      <button onclick="clearLog()">Clear</button>
+      <button onclick="toggleLogDrawer()">✕</button>
+    </div>
+  </div>
+  <div id="logEntries"></div>
+</div>
+
 <script>
-const APP_VERSION = 'v1.8.164';
+const APP_VERSION = 'v1.8.165';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
 const API_URL = 'https://script.google.com/macros/s/AKfycbwOZhzM_eUsSF9QuWdgblsEHVKWg2OIIGkvBC1Z6na58cGXDV3zd4ZA_nB19_caI22T/exec';
+
+// ── APP LOG ──────────────────────────────────────────────────────────────────
+const APP_LOG = [];
+const LOG_MAX = 300;
+function appLog(level, ctx, msg, data) {
+  const ts = new Date().toISOString().slice(11,23); // HH:MM:SS.mmm
+  const dataStr = data !== undefined ? ' ' + (typeof data === 'string' ? data : JSON.stringify(data)) : '';
+  const entry = {ts, level, ctx, msg: msg + dataStr};
+  APP_LOG.push(entry);
+  if (APP_LOG.length > LOG_MAX) APP_LOG.shift();
+  console.log(`[${ts}] ${level} [${ctx}] ${msg}${dataStr}`);
+  _renderLogEntry(entry);
+}
+function _renderLogEntry(e) {
+  const el = document.getElementById('logEntries');
+  if (!el) return;
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = `<span class="log-time">${e.ts}</span><span class="log-lvl ${e.level}">${e.level}</span><span class="log-ctx">${e.ctx}</span><span class="log-msg">${e.msg.replace(/</g,'&lt;')}</span>`;
+  el.appendChild(row);
+  el.scrollTop = el.scrollHeight;
+  const cnt = document.getElementById('logCount');
+  if (cnt) cnt.textContent = `(${APP_LOG.length})`;
+}
+function toggleLogDrawer() {
+  document.getElementById('logDrawer').classList.toggle('open');
+}
+function clearLog() {
+  APP_LOG.length = 0;
+  document.getElementById('logEntries').innerHTML = '';
+  const cnt = document.getElementById('logCount');
+  if (cnt) cnt.textContent = '(0)';
+}
+function copyLog() {
+  const txt = APP_LOG.map(e=>`${e.ts} ${e.level} [${e.ctx}] ${e.msg}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>showToast('Log copied')).catch(()=>showToast('Copy failed'));
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 let chainOptions = [];
 let pieceColorOptions = [];
@@ -750,7 +824,9 @@ async function loadFromSheets(isRefresh) {
     }
 
     const rows = parseCSV(text);
+    appLog('INFO','load',`CSV parsed: ${rows.length} rows (incl header). isRefresh=${!!isRefresh}`);
     const count = buildData(rows, isRefresh);
+    appLog('INFO','load',`buildData complete: ${count} records, ${data.length} SKU groups`);
 
     const now = new Date();
     document.getElementById('lastUpdated').textContent =
@@ -790,6 +866,7 @@ async function loadFromSheets(isRefresh) {
     render();
     if (isRefresh) showToast(`Refreshed — ${count} rows loaded`);
   } catch(err) {
+    appLog('ERROR','load',`Load failed: ${err.message}`);
     if (isRefresh) {
       showToast('Refresh failed: ' + err.message);
     } else {
@@ -1815,7 +1892,7 @@ function onFinishChange() {
   autoPopulateSKU();
 }
 
-function openAddModal() { editingId=null; window.__addComponentParentId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); }
+function openAddModal() { editingId=null; window.__addComponentParentId=null; document.getElementById('modalTitle').textContent='Add New SKU'; buildForm(null, null); document.getElementById('modalOv').classList.add('open'); appLog('INFO','modal','openAddModal: editingId=null'); }
 
 // SKU auto-population helpers
 function toCamelCase(str) {
@@ -2062,6 +2139,7 @@ function autoPopulateSKU() {
 
 function openEditModal(id) {
   editingId = id;
+  appLog('INFO','modal',`openEditModal: editingId set to ${id}`);
   // Search data array first, then search inside _siblings
   let rec = data.find(r => r._id === id);
   if (!rec) {
@@ -2084,13 +2162,14 @@ function openAddComponent(parentId) {
   editingId = null;
   window.__addComponentParentId = parentId;
   const parent = data.find(r=>r._id===parentId);
+  appLog('INFO','modal',`openAddComponent: parentId=${parentId} parentFound=${!!parent} parentPkgSKU=${parent?parent.packagingSKU:'N/A'} siblings=${parent?(parent._siblings||[]).length:0}`);
   const prefill = Object.assign({}, parent);
   COMPONENT_BLANK.forEach(k => prefill[k] = '');
   document.getElementById('modalTitle').textContent = 'Add Component to ' + parent.packagingSKU;
   buildForm(prefill, COMPONENT_LOCKED);
   document.getElementById('modalOv').classList.add('open');
 }
-function closeModal() { document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; window.__skuRegenMode=false; }
+function closeModal() { editingId = null; document.getElementById('modalOv').classList.remove('open'); window.__addComponentParentId=null; window.__skuRegenMode=false; appLog('INFO','modal','closeModal: editingId reset to null'); }
 
 async function saveRecord() {
   const rec={};
@@ -2098,6 +2177,7 @@ async function saveRecord() {
     const el=document.getElementById('f_'+f.key);
     rec[f.key]=el?el.value.trim():'';
   });
+  appLog('INFO','save',`saveRecord START editingId=${editingId} __addComponentParentId=${window.__addComponentParentId} type=${rec.type} shape=${rec.shape} pkgSKU=${rec.packagingSKU}`);
   if (!rec.packagingSKU) { alert('Packaging SKU is required.'); return; }
 
   // SKU uniqueness check -- block if PKG SKU or New ETSY SKU already used by a different group
@@ -2148,6 +2228,7 @@ async function saveRecord() {
 
   // If material is Aluminum, finish is always Aluminum regardless of checkboxes
   if (['Aluminum', 'Stainless Steel', 'Bead', 'Zinc Alloy', 'Memory Wire'].includes(rec.material)) rec.finish = 'No Finish';
+  appLog('INFO','save',`post-validation: finish=${rec.finish} material=${rec.material} objectDescription=${rec.objectDescription}`);
 
 
   // Finish is already stored as full name from the checkbox UI
@@ -2208,6 +2289,7 @@ async function saveRecord() {
     rec._originalType = original.type || rec.type || '';
     rec._originalShape = original.shape || '';
     console.log('UPDATE payload:', JSON.stringify({_action: rec._action, _rowId: rec._rowId, _originalType: rec._originalType, _originalShape: rec._originalShape, packagingSKU: rec.packagingSKU}));
+    appLog('INFO','save',`UPDATE path: rowId=${rec._rowId} pkgSKU=${rec.packagingSKU} type=${rec.type} shape=${rec.shape}`);
     try {
       const resp = await fetch(API_URL, {
         method: 'POST',
@@ -2215,6 +2297,7 @@ async function saveRecord() {
         headers: {'Content-Type': 'text/plain'},
         body: JSON.stringify(rec)
       });
+      appLog('INFO','save','UPDATE fetch completed (no-cors, no response body)');
       // If PKG SKU changed on a SET, update all siblings in memory and sheet
       const oldPkgSKU = original.packagingSKU || "";
       if (isSetType(rec.type||"") && oldPkgSKU && oldPkgSKU !== rec.packagingSKU) {
@@ -2243,18 +2326,24 @@ async function saveRecord() {
       else if (selectedIdx !== null && filtered[selectedIdx]) showDetail(filtered[selectedIdx]);
       showToast('SKU updated in Google Sheets');
     } catch(err) {
+      appLog('ERROR','save',`UPDATE fetch threw: ${err.message}`);
       showToast('Save failed: ' + err.message);
     }
   } else {
     // Post to Google Sheet
     showToast('Saving to Google Sheets...');
+    appLog('INFO','save',`APPEND path start: type=${rec.type} shape=${rec.shape} pkgSKU=${rec.packagingSKU} newEtsySKU=${rec.newEtsySKU}`);
+    appLog('INFO','save',`APPEND context: __addComponentParentId=${window.__addComponentParentId} editingId=${editingId}`);
     try {
+      const payloadStr = JSON.stringify(rec);
+      appLog('INFO','save',`APPEND payload keys: ${Object.keys(rec).join(',')} length=${payloadStr.length}`);
       await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify(rec)
+        body: payloadStr
       });
+      appLog('INFO','save','APPEND fetch completed (no-cors, no response body)');
       // no-cors means we can't read the response, but if no exception it went through
       rec._id=Date.now(); rec._siblings=[rec];
       // Capture hasNonPD BEFORE adding new record to siblings
@@ -2262,15 +2351,19 @@ async function saveRecord() {
       let hasNonPDBeforeAdd = false;
       if (window.__addComponentParentId) {
         parentForSKU = data.find(r => r._id === window.__addComponentParentId);
+        appLog('INFO','save',`addComponent mode: parentFound=${!!parentForSKU} parentId=${window.__addComponentParentId}`);
         if (parentForSKU) {
           hasNonPDBeforeAdd = (parentForSKU._siblings||[]).some(s => s !== parentForSKU && !(s.type||'').includes('-PD'));
+          appLog('INFO','save',`hasNonPDBeforeAdd=${hasNonPDBeforeAdd} siblingCount=${(parentForSKU._siblings||[]).length}`);
           parentForSKU._siblings.push(rec);
           rec._siblings = parentForSKU._siblings;
         } else {
+          appLog('WARN','save',`parent NOT FOUND in data[] for id=${window.__addComponentParentId} -- pushing as top-level`);
           data.push(rec);
         }
       } else {
         const existing = data.find(r=>r.packagingSKU===rec.packagingSKU);
+        appLog('INFO','save',`no addComponentParentId: existingMatch=${!!existing} pkgSKU=${rec.packagingSKU}`);
         if (existing) {
           existing._siblings.push(rec);
           rec._siblings = existing._siblings;
@@ -2288,6 +2381,7 @@ async function saveRecord() {
         const oldSKU = parentForSKU.packagingSKU;
         const newPkgSKU = rec.packagingSKU;
         const newEtsySKU = rec.newEtsySKU;
+        appLog('INFO','save',`SET component 2 SKU update check: oldSKU=${oldSKU} newPkgSKU=${newPkgSKU} skuChanged=${oldSKU!==newPkgSKU}`);
         if (oldSKU !== newPkgSKU) {
           // Update ALL siblings in memory, not just the parent
           (parentForSKU._siblings||[parentForSKU]).forEach(s => {
@@ -2306,14 +2400,22 @@ async function saveRecord() {
                 newEtsySKU: newEtsySKU
               })
             });
+            appLog('INFO','save',`updateSKU fetch sent: old=${oldSKU} new=${newPkgSKU}`);
             showToast('SKU updated on all components');
-          } catch(e) { showToast('SKU update error: ' + e.message); }
+          } catch(e) {
+            appLog('ERROR','save',`updateSKU fetch threw: ${e.message}`);
+            showToast('SKU update error: ' + e.message);
+          }
         }
+      } else {
+        appLog('INFO','save',`SKU update skipped: isSet=${isSetType(rec.type||'')} parentFound=${!!parentForSKU} hasNonPDBeforeAdd=${hasNonPDBeforeAdd}`);
       }
 
       // Auto-open + Component form for the SKU just saved
+      appLog('INFO','save',`auto-opening addComponent for rec._id=${rec._id} type=${rec.type}`);
       setTimeout(() => openAddComponent(rec._id), 300);
     } catch(err) {
+      appLog('ERROR','save',`APPEND fetch threw: ${err.message}`);
       showToast('Save failed: ' + err.message);
     }
   }
