@@ -92,6 +92,9 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.163 Clear necklaceOnly fields on type change; fix Object Description derives from resolved shape
+v1.8.162 Chain Length field necklaceOnly -- disabled for non-NK/PD/SET-PD types
+v1.8.161 Fix Object Description live-derive fires on shape autocomplete selection not partial input
 v1.8.160 Sync column renames: Width x Height, Chain Length; drop Characters from write
 v1.8.159 New Etsy SKU ellipsis in detail view; Charm before Double Sided in Additional Details
 v1.8.158 Chain/Bead/Clasp Details placeholder: triangle frame -> geometric frame
@@ -505,7 +508,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.160';
+const APP_VERSION = 'v1.8.163';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1060,7 +1063,7 @@ const FIELDS=[
   {key:'material',label:'Material',type:'material',third:true},
   {key:'wideHeight',label:'Width x Height',third:true},
   {key:'dropLength',label:'Drop Length',third:true},
-  {key:'chainOrDropLength',label:'Chain Length',third:true},
+  {key:'chainOrDropLength',label:'Chain Length',third:true,necklaceOnly:true},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0','1','1 1/2','2'],necklaceOnly:true,third:true},
   {key:'chain',label:'Chain Or Hardware',type:'chain',spanThree:true},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
@@ -1642,7 +1645,7 @@ function closeShapeList() {
 
 function selectShape(name) {
   const input = document.getElementById('f_shape');
-  if (input) { input.value = name; autoPopulateSKU(); }
+  if (input) { input.value = name; autoPopulateSKU(); liveUpdateObjectDescription(name); }
   closeShapeList();
 }
 
@@ -1892,13 +1895,22 @@ function onTypeChange() {
     }
   }
 
+  // Clear necklaceOnly fields when switching to a non-necklace type
+  const necklaceTypes = ['NK','PD','SET-PD'];
+  const newType = (document.getElementById('f_type')||{}).value || '';
+  if (!necklaceTypes.includes(newType)) {
+    FIELDS.filter(f => f.necklaceOnly).forEach(f => {
+      const el = document.getElementById('f_' + f.key);
+      if (el) el.value = '';
+    });
+  }
   liveUpdateObjectDescription();
   autoPopulateSKU();
 }
 
-function liveUpdateObjectDescription() {
+function liveUpdateObjectDescription(overrideShape) {
   const typeVal  = (document.getElementById('f_type')||{}).value || '';
-  const shapeVal = (document.getElementById('f_shape')||{}).value || '';
+  const shapeVal = overrideShape || (document.getElementById('f_shape')||{}).value || '';
   const el = document.getElementById('f_objectDescription');
   if (!el) return;
   // Only auto-fill if field is empty or hasn't been manually edited
