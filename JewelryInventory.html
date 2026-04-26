@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.160 Sync column renames: Width x Height, Chain Length; drop Characters from write
 v1.8.159 New Etsy SKU ellipsis in detail view; Charm before Double Sided in Additional Details
 v1.8.158 Chain/Bead/Clasp Details placeholder: triangle frame -> geometric frame
 v1.8.157 Relabel Chain Or Drop Length to Chain Length in form and detail view
@@ -504,7 +505,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = 'v1.8.159';
+const APP_VERSION = 'v1.8.160';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -521,12 +522,12 @@ let shapeAbbrevMap = {}; // shape full name (lowercase) → abbreviation
 // Column header → internal key
 const COL_MAP = {
   'Type':'type','Shape':'shape',
-  'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU','Characters':'characters',
+  'Packaging SKU':'packagingSKU','New ETSY SKU':'newEtsySKU',
   'Object Description':'objectDescription',
-  'Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight','Drop Length':'dropLength','Drop\nLength':'dropLength',
+  'Width x Height':'wideHeight','Wide x Height':'wideHeight','Wide x Height Drop':'wideHeight','Wide x\nHeight':'wideHeight','Drop Length':'dropLength','Drop\nLength':'dropLength',
   'Material':'material',
   'Chain Or Hardware':'chain','Chain':'chain','Chain\nOr\nHardware':'chain',
-  'Chain Or Drop Length':'chainOrDropLength','Chain\nLength':'chainOrDropLength',
+  'Chain Length':'chainOrDropLength','Chain Or Drop Length':'chainOrDropLength','Chain\nLength':'chainOrDropLength',
   'Chain/Bead/Clasp Details':'chainDetail','Additional Chain Details':'chainDetail','Chain Detail':'chainDetail',
   'Jump Rings':'jumpRings','Jump\nRings':'jumpRings',
   'Charm':'charm','Double Sided':'doubleSided','Double\nSided':'doubleSided',
@@ -2129,8 +2130,6 @@ async function saveRecord() {
   // If material is Aluminum, finish is always Aluminum regardless of checkboxes
   if (['Aluminum', 'Stainless Steel', 'Bead', 'Zinc Alloy', 'Memory Wire'].includes(rec.material)) rec.finish = 'No Finish';
 
-  // Auto-populate characters from newEtsySKU length
-  rec.characters = rec.newEtsySKU ? String(rec.newEtsySKU.length) : '';
 
   // Finish is already stored as full name from the checkbox UI
   // Only expand if it looks like an abbreviation (no spaces, no &)
