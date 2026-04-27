@@ -92,6 +92,7 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.167 SKU shape: use full name when fits within limit; SET uses FullPD-AbbrevER, falls back to AbbrevPD-AbbrevER
 v1.8.166 Photo Path in Reference section: derived from PKG SKU, copyable
 v1.8.165 Persistent in-app log drawer: structured logging throughout save/load/SET flows
 v1.8.164 Fix Chain Length (text input) necklaceOnly disable -- was only handled for sel type
@@ -546,7 +547,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 </div>
 
 <script>
-const APP_VERSION = 'v1.8.166';
+const APP_VERSION = 'v1.8.167';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -1132,7 +1133,7 @@ function showDetail(r, sibIdx) {
       }).join('')}
     </div></div>`:''}
     <div><div class="sec-lbl">Reference</div><div class="fgrid">
-      <div class="fld" style="grid-column:1/-1"><div class="flbl">Photo Path</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-dim);font-size:11px;word-break:break-all">C:\Users\jeral\Jewelry_Photos\_Listings\${displayRec.packagingSKU||''}</span><button class="btn sec" style="font-size:11px;padding:5px 13px;flex-shrink:0" onclick="copyPhotoPath('${(displayRec.packagingSKU||'').replace(/'/g,"\\'")}')">Copy</button></div></div>
+      <div class="fld" style="grid-column:1/-1"><div class="flbl">Photo Path</div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--text-dim);font-size:11px;word-break:break-all">C:\Users\jeral\Jewelry_Photos\_Listings\${displayRec.packagingSKU||''}</span><button class="btn sec" style="font-size:11px;padding:5px 13px;flex-shrink:0" onclick="copyPhotoPath('${(displayRec.packagingSKU||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">Copy</button></div></div>
       ${displayRec.templateCombined?`<div class="fld" style="grid-column:1/-1"><div class="flbl">Template - Combined</div><button class="btn sec" style="font-size:11px;padding:5px 13px;align-self:flex-start" onclick="copyTemplateCombined()">Copy</button></div>`:''}
       ${displayRec.templateComponents?f('Template - Components Necklace Length Options',displayRec.templateComponents,true,true):''}
       ${displayRec.templateTags?f('Template - Tags',displayRec.templateTags,true,true):''}
@@ -2031,15 +2032,30 @@ function buildSKUParts(components) {
   const pd = components.find(c => (c.type||'').includes('-PD')) || components[0];
   const typeParent = deriveTypeParent(pd.type || '');
 
-  // Shapes — PD first, then others, deduplicate
-  const shapes = [];
-  const pdShape = shapeAbbrevMap[(pd.shape||'').toLowerCase().trim()] || toCamelCase(pd.shape||'');
-  if (pdShape) shapes.push(pdShape);
-  components.filter(c => c !== pd).forEach(c => {
-    const s = shapeAbbrevMap[(c.shape||'').toLowerCase().trim()] || toCamelCase(c.shape||'');
-    if (s && s !== pdShape) shapes.push(s);
-  });
-  const shapeStr = shapes.join('');
+  // Shape helpers: full name (CamelCase) and abbreviation for a component
+  const shapeFullName = c => toCamelCase(c.shape||'');
+  const shapeAbbrev   = c => shapeAbbrevMap[(c.shape||'').toLowerCase().trim()] || toCamelCase(c.shape||'');
+
+  const isSet = components.length > 1 && components.some(c => (c.type||'').includes('-PD')) && components.some(c => !(c.type||'').includes('-PD'));
+  const nonPD = components.filter(c => c !== pd);
+
+  // Build shape string candidates
+  // SET: try FullPD-AbbrevER first; fall back to AbbrevPD-AbbrevER
+  // Non-SET: try FullName first; fall back to Abbrev
+  const buildShapeStr = (pdFull, otherFull) => {
+    const parts = [];
+    const pdSeg = pdFull ? shapeFullName(pd) : shapeAbbrev(pd);
+    if (pdSeg) parts.push(pdSeg);
+    nonPD.forEach(c => {
+      const s = otherFull ? shapeFullName(c) : shapeAbbrev(c);
+      if (s && s !== pdSeg) parts.push(s);
+    });
+    return parts.join('');
+  };
+
+  // Two candidates per SKU type; pick longest that fits, else fall back
+  const shapeStrFull  = isSet ? buildShapeStr(true,  false) : buildShapeStr(true,  true);
+  const shapeStrAbbr  = buildShapeStr(false, false);
 
   const metal = getChainMetal(pd.chain||'');
   const isNoFinish = (pd.finish||'').trim() === 'No Finish';
@@ -2060,8 +2076,8 @@ function buildSKUParts(components) {
 
   const beadSegment = chainBeads || [earBeads, chainLinks].filter(Boolean).join('-');
   const finReadable = isNoFinish ? '' : finishReadable(pd.finish||'');
-  const finShort = isNoFinish ? '' : finishAbbr(pd.finish||'');
-  const colorAbbrs = (pd.pieceColors||'').split(',').map(c => {
+  const finShort    = isNoFinish ? '' : finishAbbr(pd.finish||'');
+  const colorAbbrs  = (pd.pieceColors||'').split(',').map(c => {
     const stored = c.trim();
     if (!stored) return '';
     const match = pieceColorOptions.find(o => {
@@ -2072,15 +2088,20 @@ function buildSKUParts(components) {
     return match ? match.split('=')[0].trim() : stored;
   }).filter(Boolean).slice(0, 2).join(''); // cap at first 2 colors in SKU
 
-  const pkgBase  = [typeParent, shapeStr, metal, beadSegment, finReadable].filter(Boolean).join('-');
-  const etsyBase = [typeParent, shapeStr, metal, beadSegment, finShort].filter(Boolean).join('-');
+  // Build both pkg and etsy SKUs for full and abbrev shape, pick best fit
+  const buildFull = (shapeStr, fin) => {
+    const base = [typeParent, shapeStr, metal, beadSegment, fin].filter(Boolean).join('-');
+    return colorAbbrs ? base + '-' + colorAbbrs : base;
+  };
 
-  const pkgFull  = colorAbbrs ? pkgBase  + '-' + colorAbbrs : pkgBase;
-  const etsyFull = colorAbbrs ? etsyBase + '-' + colorAbbrs : etsyBase;
+  const pkgFull  = buildFull(shapeStrFull, finReadable);
+  const pkgAbbr  = buildFull(shapeStrAbbr, finReadable);
+  const etsyFull = buildFull(shapeStrFull, finShort);
+  const etsyAbbr = buildFull(shapeStrAbbr, finShort);
 
   return {
-    pkgSKU:  pkgFull.length  <= 38 ? pkgFull  : pkgBase.slice(0, 38),
-    etsySKU: etsyFull.length <= 32 ? etsyFull : etsyBase.slice(0, 32)
+    pkgSKU:  pkgFull.length  <= 38 ? pkgFull  : (pkgAbbr.length  <= 38 ? pkgAbbr  : pkgAbbr.slice(0, 38)),
+    etsySKU: etsyFull.length <= 32 ? etsyFull : (etsyAbbr.length <= 32 ? etsyAbbr : etsyAbbr.slice(0, 32))
   };
 }
 
