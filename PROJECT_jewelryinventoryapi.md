@@ -92,7 +92,13 @@ Spreadsheet published base URL:
 - **Additional Details:** Charm / Double Sided / Gift Box
 - **Etsy Listing:** New Etsy SKU (ellipsis on overflow, hover for full) / Status / Added To Etsy / Etsy URL
 - **SKU Group Components:** siblings list (double-click to edit)
-- **Reference:** Template - Combined / Template - Components Necklace Length Options
+- **Reference:** Photo Path (derived from PKG SKU, copyable) / Template - Combined / Template - Components Necklace Length Options
+
+### Photo Path
+- Displayed in Reference section, first item above Template - Combined
+- Derived from PKG SKU: `C:\Users\jeral\Jewelry_Photos\_Listings\{packagingSKU}`
+- Not stored in sheet -- computed at display time
+- Copy button puts full Windows path on clipboard
 
 ### Chain Or Hardware filtering by Type
 | Type | Options shown |
@@ -130,6 +136,14 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 - Stored as full names comma-separated; abbreviations used in SKU
 - Sourced from Abbreviations_Published Colors column
 
+### Logging
+- Persistent in-app log drawer: "◎ Log" button fixed bottom-right
+- `appLog(level, ctx, msg, data)` -- levels: INFO / WARN / ERROR
+- Always fires to browser console AND in-app drawer simultaneously
+- Capped at 300 entries in memory; Copy All button exports full log as text
+- `closeModal()` resets `editingId` to null (bug fix in v1.8.165)
+- Key log contexts: `load` (CSV fetch/parse), `save` (full saveRecord flow), `modal` (open/close events)
+
 ### Other behaviors
 - Search strips hyphens and spaces before comparing
 - Type dropdown order matches Abbreviations_Published Type column order
@@ -138,10 +152,12 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 - SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group
 - Default filter on load: Etsy Status = Active
 - Jump Rings / Jump Ring Qty: hidden from detail view, data retained in sheet
+- Edit modal blocked if record has no rowId (added in current session, not yet refreshed) -- must Refresh first
 
 ### Known TODOs
 - Watch for SET-ER/ER records with non-empty Chain Length Config (data validation/audit feature)
 - Characters column still exists in sheet -- to be dropped from sheet eventually (already not written by app)
+- Auto-open after SET-ER save opens third modal with parentFound=false (benign but sloppy -- third modal has no valid parent context)
 
 ## Delivery Convention
 - Filename: `JewelryInventory_vXXXXX.html` (forces fresh browser download)
@@ -158,6 +174,8 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.166 | Photo Path in Reference section: derived from PKG SKU, copyable |
+| v1.8.165 | Persistent in-app log drawer; structured logging throughout save/load/SET flows; closeModal resets editingId |
 | v1.8.164 | Fix Chain Length (text input) necklaceOnly disable -- was only handled for sel type |
 | v1.8.163 | Clear necklaceOnly fields on type change; fix Object Description derives from resolved shape |
 | v1.8.162 | Chain Length field necklaceOnly -- disabled for non-NK/PD/SET-PD types |
