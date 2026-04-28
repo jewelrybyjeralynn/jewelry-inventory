@@ -93,6 +93,8 @@ KEY BEHAVIORS
 --------------------------------------------------------------------------------
 VERSION LOG (recent)
 --------------------------------------------------------------------------------
+v1.8.171 Default sort changed to Recently Edited
+v1.8.170 Chain Or Hardware: PKG type shows only PKG- SKUs; all other types exclude PKG- SKUs
 v1.8.169 Chain Or Hardware full width across all 5 columns
 v1.8.168 Freebie checkbox (col 18); Gift Box dropdown from PKG findings; Photo Path template literal fix; 5-col form grid
 v1.8.167 SKU shape: use full name when fits within limit; SET uses FullPD-AbbrevER, falls back to AbbrevPD-AbbrevER
@@ -516,7 +518,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   </div>
   <div class="main">
     <div class="list-pane">
-      <div class="list-hdr"><span id="listCount"></span><span id="listVersion"></span><div style="display:flex;align-items:center;gap:6px"><label id="sortLabel" style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Sort</label><select id="listSortSelect" style="font-size:10px;padding:3px 5px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim)" onchange="setListSort(this.value)"><option value="default">Default</option><option value="recent">Recently Edited</option><option value="oldest">Least Recently Edited</option></select></div></div>
+      <div class="list-hdr"><span id="listCount"></span><span id="listVersion"></span><div style="display:flex;align-items:center;gap:6px"><label id="sortLabel" style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Sort</label><select id="listSortSelect" style="font-size:10px;padding:3px 5px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim)" onchange="setListSort(this.value)"><option value="default">Default</option><option value="recent" selected>Recently Edited</option><option value="oldest">Least Recently Edited</option></select></div></div>
       <div class="list-scroll" id="listScroll"></div>
     </div>
     <div class="detail-pane" id="detailPane">
@@ -550,7 +552,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 </div>
 
 <script>
-const APP_VERSION = 'v1.8.169';
+const APP_VERSION = 'v1.8.171';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -646,7 +648,7 @@ const COL_MAP = {
   'Published_Update_Timestamp':'publishedTimestamp'
 };
 
-let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null, listSort='default';
+let data=[], addedRecords=[], filtered=[], selectedIdx=null, editingId=null, listSort='recent';
 
 function normalizeHeader(h) {
   return String(h||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();
@@ -1369,7 +1371,7 @@ function buildForm(rec, lockedKeys) {
     }
     if (f.type==='chain') {
       const currentType = (rec && rec.type) || (document.getElementById('f_type')||{}).value || '';
-      const chainDisabled = ['JD','PKG'].includes(currentType.toUpperCase()) || isLocked;
+      const chainDisabled = ['JD'].includes(currentType.toUpperCase()) || isLocked;
       const displayVal = v ? (() => {
         const o = chainOptions.find(o => o.sku === v);
         return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
@@ -1652,11 +1654,15 @@ document.addEventListener('click', e => {
 
 function getChainOptionsForType(typeVal) {
   const t = (typeVal||'').toUpperCase();
-  const DISABLED_TYPES = ['JD','PKG'];
+  const DISABLED_TYPES = ['JD'];
   const EAR_TYPES = ['ER','SET-ER'];
   const KC_TYPES  = ['KC'];
   const BR_TYPES  = ['BR','SET-BR'];
+  const PKG_TYPES = ['PKG'];
   if (DISABLED_TYPES.includes(t)) return null;
+  if (PKG_TYPES.includes(t)) {
+    return chainOptions.filter(o => o.sku.toUpperCase().startsWith('PKG-'));
+  }
   if (EAR_TYPES.includes(t)) {
     return chainOptions.filter(o =>
       o.sku.toUpperCase().includes('EAR') || (o.style||'').toUpperCase().includes('EAR'));
@@ -1665,10 +1671,11 @@ function getChainOptionsForType(typeVal) {
     return chainOptions.filter(o =>
       o.sku.toLowerCase().includes('keychain') || (o.style||'').toLowerCase().includes('keychain'));
   }
-  // All other types — exclude EAR, Keychain, and BRACELET options unless BR type
+  // All other types — exclude EAR, Keychain, BRACELET, and PKG options
   return chainOptions.filter(o => {
     const skuU = o.sku.toUpperCase();
     const styleU = (o.style||'').toUpperCase();
+    if (skuU.startsWith('PKG-')) return false;
     if (skuU.includes('EAR') || styleU.includes('EAR')) return false;
     if (o.sku.toLowerCase().includes('keychain') || (o.style||'').toLowerCase().includes('keychain')) return false;
     if ((skuU.includes('BRACELET') || styleU.includes('BRACELET')) && !BR_TYPES.includes(t)) return false;
