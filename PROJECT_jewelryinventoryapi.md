@@ -29,12 +29,14 @@ Spreadsheet published base URL:
 5:Width x Height  6:Drop Length  7:Material  8:Chain Or Hardware
 9:Chain Length  10:Chain/Bead/Clasp Details  11:Extension Chain
 12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
-17:Gift Box  18:Added To Etsy  19:Jump Rings  20:Jump Rings Qty  21:Old SKU
-22:ETSY ListingID  23:ETSY SKU  24:ETSY Title  25:ETSY Status  26:ETSY Price
-27:ETSY URL  28:Template - Title Custom Intro
-29:Template - Components Necklace Length Options
-30:Template - Combined  31:Template - Tags  32:Current Tags  33:Listing Output
-34:Added_Timestamp  35:Row_ID  36:API_Edit
+17:Gift Box  18:Freebie  19:Added To Etsy  20:Jump Rings  21:Jump Rings Qty
+22:Old SKU  23:Previous ETSY ListingID  24:ETSY ListingID  25:ETSY SKU
+26:ETSY Title  27:ETSY Status  28:ETSY Price  29:ETSY URL
+30:Template - Title Custom Intro
+31:Template - Components Necklace Length Options
+32:Template - Combined  33:Template - Tags  34:Current Tags  35:Listing Output
+36:Added_Timestamp  37:Row_ID  38:API_Edit
+39:EtsySync_Timestamp  40:EtsySync_UpdatedTimestamp  41:Template_Executed
 ```
 
 **Removed columns:** Characters (dropped), Update Templates (dropped), Template - Why You will Love it (dropped)
@@ -77,19 +79,19 @@ Spreadsheet published base URL:
 - On edit open: existing value pre-filled and marked as manualEdit so live-derive doesn't overwrite
 - Fallback: if empty on new record at save time, derives from current Type + Shape
 
-### Form Layout (4-column grid)
+### Form Layout (5-column grid)
 - Row 1: Type (span 2) / Shape / Material
 - Row 2: Width x Height / Drop Length / Chain Length (necklaceOnly) / Extension Chain (necklaceOnly)
 - Row 3: Chain Or Hardware (span 3) / Chain Length Config (necklaceOnly, span 1)
 - Row 4: Chain/Bead/Clasp Details (full width)
 - Row 5: Finish (full width)
 - Row 6: Colors (full width)
-- Row 7: Charm / Double Sided / Gift Box / Object Description
+- Row 7: Charm / Double Sided / Gift Box / Freebie / Object Description
 
 ### Detail View Layout
 - **Physical Details:** Shape / Width x Height / Drop Length / Material / Colors / Description
 - **Chain & Hardware:** Chain Or Hardware / Chain Length / Extension Chain / Chain Length Config / Chain/Bead/Clasp Details (full width) / Finish
-- **Additional Details:** Charm / Double Sided / Gift Box
+- **Additional Details:** Charm / Double Sided / Gift Box / Freebie
 - **Etsy Listing:** New Etsy SKU (ellipsis on overflow, hover for full) / Status / Added To Etsy / Etsy URL
 - **SKU Group Components:** siblings list (double-click to edit)
 - **Reference:** Photo Path (derived from PKG SKU, copyable) / Template - Combined / Template - Components Necklace Length Options
@@ -97,8 +99,21 @@ Spreadsheet published base URL:
 ### Photo Path
 - Displayed in Reference section, first item above Template - Combined
 - Derived from PKG SKU: `C:\Users\jeral\Jewelry_Photos\_Listings\{packagingSKU}`
-- Not stored in sheet -- computed at display time
+- Not stored in sheet -- computed at display time via string concatenation (not template literal)
 - Copy button puts full Windows path on clipboard
+
+### Gift Box
+- Dropdown sourced from Findings_SKUs_Published where `Include In Add SKU Dropdown Form = Yes` AND `SKU starts with PKG`
+- Stored value: PKG SKU string (e.g. `PKG-SML-GiftBox-Brown`)
+- Detail view displays: `SKU -- Style` (e.g. `PKG-SML-GiftBox-Brown -- Small Jewelry Gift Boxes - Brown`)
+- SKUs ending in `-Included` indicate the box is bundled in the price (for template use)
+- Blank = no gift box
+
+### Freebie
+- Yes/No dropdown in form Row 7, right of Gift Box
+- Stored in col 18; blank or "No" = not a freebie
+- Shown in Additional Details section of detail view
+- Use case: SET-BR or any component added as a bonus not included in price -- templates check this field
 
 ### Chain Or Hardware filtering by Type
 | Type | Options shown |
@@ -174,6 +189,8 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.168 | Freebie Yes/No field (col 18); Gift Box → PKG dropdown (SKU stored, SKU--Style displayed); 5-col form grid; Photo Path backslash fix |
+| v1.8.167 | SKU shape: use full name when fits within limit; SET uses FullPD-AbbrevER, falls back to AbbrevPD-AbbrevER |
 | v1.8.166 | Photo Path in Reference section: derived from PKG SKU, copyable |
 | v1.8.165 | Persistent in-app log drawer; structured logging throughout save/load/SET flows; closeModal resets editingId |
 | v1.8.164 | Fix Chain Length (text input) necklaceOnly disable -- was only handled for sel type |
