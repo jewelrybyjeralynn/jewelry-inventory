@@ -121,8 +121,9 @@ Spreadsheet published base URL:
 | ER, SET-ER | EAR options only |
 | KC | Keychain options only |
 | BR, SET-BR | includes BRACELET; others exclude it |
-| JD, PKG | disabled |
-| All others | excludes EAR, Keychain, BRACELET |
+| PKG | PKG- SKUs only |
+| JD | disabled |
+| All others | excludes EAR, Keychain, BRACELET, PKG- |
 
 ### necklaceOnly Fields
 Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all others:
@@ -163,7 +164,7 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 - Search strips hyphens and spaces before comparing
 - Type dropdown order matches Abbreviations_Published Type column order
 - Double-click a component in SKU Group list → opens Edit modal for that component
-- Sort: Default / Recently Edited / Least Recently Edited (by API_Edit; siblings grouped by max)
+- Sort: Default / Recently Edited / Least Recently Edited (by API_Edit; siblings grouped by max); **default is Recently Edited**
 - SKU uniqueness check on Save -- blocks if PKG SKU or New ETSY SKU already used by a different group
 - Default filter on load: Etsy Status = Active
 - Jump Rings / Jump Ring Qty: hidden from detail view, data retained in sheet
@@ -189,6 +190,9 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.171 | Default sort changed to Recently Edited |
+| v1.8.170 | Chain Or Hardware: PKG type shows only PKG- SKUs; all other types exclude PKG- SKUs |
+| v1.8.169 | Chain Or Hardware full width across all 5 columns |
 | v1.8.168 | Freebie Yes/No field (col 18); Gift Box → PKG dropdown (SKU stored, SKU--Style displayed); 5-col form grid; Photo Path backslash fix |
 | v1.8.167 | SKU shape: use full name when fits within limit; SET uses FullPD-AbbrevER, falls back to AbbrevPD-AbbrevER |
 | v1.8.166 | Photo Path in Reference section: derived from PKG SKU, copyable |
