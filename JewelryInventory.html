@@ -1168,14 +1168,14 @@ function showDetail(r, sibIdx) {
 // FORM
 const FIELDS=[
   {key:'type',label:'Type',type:'type',spanTwo:true},
-  {key:'shape',label:'Shape',type:'shape',third:true},
+  {key:'shape',label:'Shape',type:'shape',spanTwo:true},
   {key:'material',label:'Material',type:'material',third:true},
   {key:'wideHeight',label:'Width x Height',third:true},
   {key:'dropLength',label:'Drop Length',third:true},
   {key:'chainOrDropLength',label:'Chain Length',third:true,necklaceOnly:true},
   {key:'extChainOption',label:'Extension Chain',type:'sel',options:['','0','1','1 1/2','2'],necklaceOnly:true,third:true},
-  {key:'chain',label:'Chain Or Hardware',type:'chain',spanThree:true},
   {key:'chainConfig',label:'Chain Length Config',type:'sel',options:['','Standard','Standard & Max Length','Minor','Minor & Max Length','Major','Major & Max Length','None'],necklaceOnly:true,third:true},
+  {key:'chain',label:'Chain Or Hardware',type:'chain',spanFour:true},
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], geometric frame, connectors, charms, [chain]; [pendant]',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
@@ -1247,11 +1247,11 @@ function buildForm(rec, lockedKeys) {
         const selected = abbr===v || o===v ? 'selected' : '';
         return `<option value="${abbr}" ${selected}>${o}</option>`;
       })].join('');
-      return `<div class="fg" style="${f.spanTwo?'grid-column:span 2':f.spanThree?'grid-column:span 3':f.full?'grid-column:1/-1':f.third?'':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
+      return `<div class="fg" style="${f.spanFour?'grid-column:span 4':f.spanTwo?'grid-column:span 2':f.spanThree?'grid-column:span 3':f.full?'grid-column:1/-1':f.third?'':''}"><label>${f.label}</label><select class="fs" id="f_${f.key}" onchange="onTypeChange()" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='material') {
       const opts = ['<option value=""></option>', ...materialOptions.map(o => `<option ${o===v?'selected':''}>${o}</option>`)].join('');
-      const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
+      const colSpan = f.full ? 'grid-column:1/-1' : f.spanFour ? 'grid-column:span 4' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='finish') {
@@ -1351,7 +1351,8 @@ function buildForm(rec, lockedKeys) {
       return `<div class="fg" style="${f.full?'grid-column:1/-1':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='shape') {
-      return `<div class="fg" style="${f.third?'':'grid-column:span 2'}">
+      const shapeSpan = f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
+      return `<div class="fg" style="${shapeSpan}">
         <label>${f.label}</label>
         <div class="combo-wrap">
           <input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Type or select shape..."
@@ -1372,7 +1373,7 @@ function buildForm(rec, lockedKeys) {
         const o = chainOptions.find(o => o.sku === v);
         return o ? `${o.color} — ${o.sku} — ${o.style}` : v;
       })() : '';
-      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.spanThree?'grid-column:span 3':f.spanTwo?'grid-column:span 2':'grid-column:span 2'}">
+      return `<div class="fg" style="${f.full?'grid-column:1/-1':f.spanFour?'grid-column:span 4':f.spanThree?'grid-column:span 3':f.spanTwo?'grid-column:span 2':'grid-column:span 2'}">
         <label>${f.label}</label>
         <div class="combo-wrap">
           <input type="text" id="f_${f.key}_display" value="${displayVal}" placeholder="Type to search chains..."
@@ -1395,7 +1396,7 @@ function buildForm(rec, lockedKeys) {
       return `<div class="fg" style="${f.third?'':'grid-column:span 2'}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${opts}</select></div>`;
     }
     if (f.type==='sel') {
-      const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
+      const colSpan = f.full ? 'grid-column:1/-1' : f.spanFour ? 'grid-column:span 4' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
       if (f.necklaceOnly) {
         const necklaceTypes = ['NK','PD','SET-PD'];
         // Use rec.type first (reliable), only fall back to DOM if rec has no type (onTypeChange rebuilds)
@@ -1405,7 +1406,7 @@ function buildForm(rec, lockedKeys) {
       }
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><select class="fs" id="f_${f.key}" ${isLocked?'disabled':''}>${f.options.map(o=>`<option ${o===v || o===v+'"' || o===v.replace('"','') ?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
-    const colSpan = f.full ? 'grid-column:1/-1' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
+    const colSpan = f.full ? 'grid-column:1/-1' : f.spanFour ? 'grid-column:span 4' : f.spanThree ? 'grid-column:span 3' : f.spanTwo ? 'grid-column:span 2' : f.third ? '' : 'grid-column:span 2';
     if (f.key === 'objectDescription') {
       return `<div class="fg" style="${colSpan}"><label>${f.label}</label><input type="text" id="f_${f.key}" value="${v?v.replace(/"/g,'&quot;'):''}" placeholder="Auto-derived from Type + Shape" oninput="this.dataset.manualEdit='1'" ${isLocked?'readonly style="opacity:0.5;cursor:not-allowed"':''}></div>`;
     }
