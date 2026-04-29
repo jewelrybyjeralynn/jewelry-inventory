@@ -92,7 +92,7 @@ Spreadsheet published base URL:
 - **Physical Details:** Shape / Width x Height / Drop Length / Material / Colors / Description
 - **Chain & Hardware:** Chain Or Hardware / Chain Length / Extension Chain / Chain Length Config / Chain/Bead/Clasp Details (full width) / Finish
 - **Additional Details:** Charm / Double Sided / Gift Box / Freebie
-- **Etsy Listing:** New Etsy SKU (ellipsis on overflow, hover for full) / Status / Added To Etsy / Etsy URL
+- **Etsy Listing:** New Etsy SKU (span 2, ellipsis on overflow, hover for full) / Status / Added To Etsy / Etsy URL
 - **SKU Group Components:** siblings list (double-click to edit)
 - **Reference:** Photo Path (derived from PKG SKU, copyable) / Template - Combined / Template - Components Necklace Length Options
 
@@ -105,7 +105,7 @@ Spreadsheet published base URL:
 ### Gift Box
 - Dropdown sourced from Findings_SKUs_Published where `Include In Add SKU Dropdown Form = Yes` AND `SKU starts with PKG`
 - Stored value: PKG SKU string (e.g. `PKG-SML-GiftBox-Brown`)
-- Detail view displays: `SKU -- Style` (e.g. `PKG-SML-GiftBox-Brown -- Small Jewelry Gift Boxes - Brown`)
+- Detail view displays: SKU only (e.g. `PKG-SML-GiftBox-Brown`), spans 2 columns
 - SKUs ending in `-Included` indicate the box is bundled in the price (for template use)
 - Blank = no gift box
 
@@ -190,6 +190,9 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.174 | New Etsy SKU detail view spans 2 columns |
+| v1.8.173 | Gift Box detail view spans 2 columns to avoid wrapping |
+| v1.8.172 | Gift Box detail view shows SKU only (no style name) |
 | v1.8.171 | Default sort changed to Recently Edited |
 | v1.8.170 | Chain Or Hardware: PKG type shows only PKG- SKUs; all other types exclude PKG- SKUs |
 | v1.8.169 | Chain Or Hardware full width across all 5 columns |
