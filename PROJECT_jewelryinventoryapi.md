@@ -162,6 +162,7 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 
 ### Other behaviors
 - Search strips hyphens and spaces before comparing
+- Search also resolves Chain Or Hardware SKU to its color via Findings_SKUs_Published (chainColorMap built at load time from ALL findings rows); searching "Antique Copper" returns all records whose chain maps to that color
 - Type dropdown order matches Abbreviations_Published Type column order
 - Double-click a component in SKU Group list → opens Edit modal for that component
 - Sort: Default / Recently Edited / Least Recently Edited (by API_Edit; siblings grouped by max); **default is Recently Edited**
@@ -190,6 +191,7 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.175 | Search box resolves chain SKU to color via Findings_SKUs_Published; "Antique Copper" matches all records using that color chain |
 | v1.8.174 | New Etsy SKU detail view spans 2 columns |
 | v1.8.173 | Gift Box detail view spans 2 columns to avoid wrapping |
 | v1.8.172 | Gift Box detail view shows SKU only (no style name) |
