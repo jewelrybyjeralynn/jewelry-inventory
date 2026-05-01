@@ -429,12 +429,12 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
     .fform{grid-template-columns:1fr 1fr;}
     .finish-panel{grid-template-rows:repeat(4,auto);}
     .finish-fb-group{grid-template-columns:1fr;grid-template-rows:auto repeat(12,auto);}
+    #logBtn{display:none;}
   }
 
   /* LOG DRAWER */
   #logBtn{position:fixed;bottom:18px;right:18px;z-index:900;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;cursor:pointer;border-radius:3px;}
   #logBtn:hover{color:var(--text);border-color:var(--copper-dim);}
-  #modalOv.open ~ #logBtn{display:none;}
   #logDrawer{position:fixed;bottom:0;right:0;width:620px;max-width:100vw;height:340px;z-index:901;background:var(--surface);border-top:1px solid var(--border);border-left:1px solid var(--border);display:none;flex-direction:column;}
   #logDrawer.open{display:flex;}
   #logDrHdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
