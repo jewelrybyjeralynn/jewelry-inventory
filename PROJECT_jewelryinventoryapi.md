@@ -153,7 +153,7 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 - Sourced from Abbreviations_Published Colors column
 
 ### Logging
-- Persistent in-app log drawer: "◎ Log" button fixed bottom-right
+- Persistent in-app log drawer: "◎ Log" button fixed bottom-right -- **desktop only** (hidden on mobile <=700px)
 - `appLog(level, ctx, msg, data)` -- levels: INFO / WARN / ERROR
 - Always fires to browser console AND in-app drawer simultaneously
 - Capped at 300 entries in memory; Copy All button exports full log as text
@@ -191,6 +191,7 @@ Enabled only for NK, PD, SET-PD. Disabled and cleared on type change for all oth
 ## Version Log (recent)
 | Version | Change |
 |---------|--------|
+| v1.8.176 | Log button hidden on mobile (<=700px); desktop-only feature |
 | v1.8.175 | Search box resolves chain SKU to color via Findings_SKUs_Published; "Antique Copper" matches all records using that color chain |
 | v1.8.174 | New Etsy SKU detail view spans 2 columns |
 | v1.8.173 | Gift Box detail view spans 2 columns to avoid wrapping |
