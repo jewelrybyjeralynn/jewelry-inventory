@@ -434,6 +434,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
   /* LOG DRAWER */
   #logBtn{position:fixed;bottom:18px;right:18px;z-index:900;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;cursor:pointer;border-radius:3px;}
   #logBtn:hover{color:var(--text);border-color:var(--copper-dim);}
+  #modalOv.open ~ #logBtn{display:none;}
   #logDrawer{position:fixed;bottom:0;right:0;width:620px;max-width:100vw;height:340px;z-index:901;background:var(--surface);border-top:1px solid var(--border);border-left:1px solid var(--border);display:none;flex-direction:column;}
   #logDrawer.open{display:flex;}
   #logDrHdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -556,7 +557,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 </div>
 
 <script>
-const APP_VERSION = 'v1.8.175';
+const APP_VERSION = 'v1.8.176';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
