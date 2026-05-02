@@ -31,8 +31,8 @@ Listings_Published columns (0-indexed):
   0:Type  1:Shape  2:Packaging SKU  3:New ETSY SKU  4:Object Description
   5:Width x Height  6:Drop Length  7:Material  8:Chain Or Hardware
   9:Chain Length  10:Chain/Bead/Clasp Details  11:Extension Chain
-  12:Chain Length Config  13:Finish  14:Colors  15:Charm  16:Double Sided
-  17:Gift Box  18:Freebie  19:Added To Etsy  20:Jump Rings  21:Jump Rings Qty
+  12:Chain Length Config  13:Finish  14:Colors  15:Upcycled  16:Charm  17:Double Sided
+  18:Gift Box  19:Freebie  20:Added To Etsy  21:Jump Rings  22:Jump Rings Qty
   22:Old SKU  23:Previous ETSY ListingID  24:ETSY ListingID  25:ETSY SKU
   26:ETSY Title  27:ETSY Status  28:ETSY Price  29:ETSY URL
   30:Template - Title Custom Intro
@@ -557,7 +557,7 @@ v1.8.12  Fixed isSetType check (was checking derived parent not raw type)
 </div>
 
 <script>
-const APP_VERSION = 'v1.8.176';
+const APP_VERSION = 'v1.8.177';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1428673260&single=true&output=csv';
 const FINDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1709919881&single=true&output=csv';
 const ABBREV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSY-d6fqtTZhGzIoE4w_q3J4AAGpL1By7Jsc8RBVspYU6r8Fx4l71Xmx7WwR69vBwevSi63WnqJnaXO/pub?gid=1879145246&single=true&output=csv';
@@ -630,6 +630,7 @@ const COL_MAP = {
   'Gift Box':'giftBox','Gift\nBox':'giftBox',
   'Freebie':'freebie',
   'Colors':'pieceColors','Color Method':'colorMethod','Color':'colorMethod',
+  'Upcycled':'upcycled',
   'Features & Details':'featuresDetails',
   'Old SKU':'oldSKU',
   'ETSY_Status':'etsyStatus','ETSY Status':'etsyStatus','ETSY\nStatus':'etsyStatus',
@@ -1154,7 +1155,7 @@ function showDetail(r, sibIdx) {
     <div><div class="sec-lbl">Additional Details</div><div class="fgrid">
       ${f('Charm',displayRec.charm)}${f('Double Sided',displayRec.doubleSided)}
       <div class="fld" style="grid-column:span 2"><div class="flbl">Gift Box</div><div class="fval">${displayRec.giftBox||'—'}</div></div>
-      ${f('Freebie',displayRec.freebie)}
+      ${f('Freebie',displayRec.freebie)}${f('Upcycled',displayRec.upcycled)}
     </div></div>
     <div><div class="sec-lbl">Etsy Listing</div><div class="fgrid">
       <div class="fld" style="grid-column:span 2"><div class="flbl">New Etsy SKU</div><div class="fval" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${displayRec.newEtsySKU||''}">${displayRec.newEtsySKU||'—'}</div></div>
@@ -1197,6 +1198,7 @@ const FIELDS=[
   {key:'chainDetail',label:'Chain/Bead/Clasp Details',placeholder:'e.g. beads [bead sku], geometric frame, connectors, charms, [chain]; [pendant]',full:true},
   {key:'finish',label:'Finish',type:'multifinish'},
   {key:'pieceColors',label:'Colors',type:'multicolors'},
+  {key:'upcycled',label:'Upcycled',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'charm',label:'Charm',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'doubleSided',label:'Double Sided',type:'sel',options:['No','Yes'],default:'No',third:true},
   {key:'giftBox',label:'Gift Box',type:'giftbox',third:true},
@@ -1206,7 +1208,7 @@ const FIELDS=[
   {key:'newEtsySKU',label:'New Etsy SKU'}
 ];
 
-const COMPONENT_BLANK = ['type','shape','wideHeight','dropLength','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','giftBox','freebie','finish','extChainOption','pieceColors','objectDescription'];
+const COMPONENT_BLANK = ['type','shape','wideHeight','dropLength','material','chain','chainDetail','chainOrDropLength','charm','doubleSided','giftBox','freebie','upcycled','finish','extChainOption','pieceColors','objectDescription'];
 const COMPONENT_LOCKED = ['packagingSKU','newEtsySKU'];
 
 function buildForm(rec, lockedKeys) {
@@ -1345,7 +1347,7 @@ function buildForm(rec, lockedKeys) {
         return {abbr: stored, fullName: stored};
       });
       const tagsJson = JSON.stringify(initTags).replace(/"/g,'&quot;');
-      return `<div class="fg" style="grid-column:1/-1">
+      return `<div class="fg" style="grid-column:span 4">
         <label>${f.label}</label>
         <div class="tag-input-wrap" id="f_${f.key}_wrap">
           <div class="tag-input-box" id="f_${f.key}_box" onclick="document.getElementById('f_${f.key}_ti').focus()">
